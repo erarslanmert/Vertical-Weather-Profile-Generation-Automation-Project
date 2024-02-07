@@ -1,9 +1,7 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtWidgets import QMainWindow, QApplication
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import QDateTime, Qt, QLocale, pyqtSignal, QObject
-from PyQt6.QtCore import Qt, pyqtSignal, QObject, QTimer, QThread
-
+from PyQt6.QtCore import QDateTime, Qt, QLocale
 import sys
 import time_zone_finder, createURL, progressbardownload
 from datetime import datetime, timedelta
@@ -13,29 +11,6 @@ selected_time_zone = ''
 selected_time_interval = []
 selected_location = []
 download_time_interval = []
-
-class Worker(QObject):
-    label_update_signal = pyqtSignal(str)
-
-    def __init__(self, line_edit1, line_edit2):
-        super().__init__()
-        self.lineEdit1 = line_edit1
-        self.lineEdit2 = line_edit2
-        self.thread = None
-
-    def process_input(self):
-        # Start a new thread to process the input
-        if self.thread is None or not self.thread.isRunning():
-            self.thread = QThread()
-            self.moveToThread(self.thread)
-            self.thread.start()
-            print("Selected Time Zone:", selected_time_zone)
-            QTimer.singleShot(0, self.update_utc_location)
-
-    def update_utc_location(self):
-        selected_location = [float(self.lineEdit1.text()), float(self.lineEdit2.text())]
-        selected_time_zone = time_zone_finder.get_utc_time_from_coordinates(selected_location)
-        self.label_update_signal.emit(selected_time_zone)
 
 
 class Ui_MainWindow(object):
@@ -105,7 +80,7 @@ class Ui_MainWindow(object):
         self.buttonBox.setObjectName("buttonBox")
 
         self.label = QtWidgets.QLabel(parent=self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(80, 260, 201, 20))
+        self.label.setGeometry(QtCore.QRect(60, 260, 250, 20))
         self.label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.label.setObjectName("label")
 
@@ -123,19 +98,31 @@ class Ui_MainWindow(object):
         self.lineEdit.setText('51.987327')
         self.lineEdit_2.setText('5.933481')
 
-        self.worker = Worker(self.lineEdit, self.lineEdit_2)
+        self.lineEdit.textChanged.connect(self.update_utc_location)
+        self.lineEdit_2.textChanged.connect(self.update_utc_location)
         
-        # Connect line edits to worker's method
-        self.lineEdit.textChanged.connect(self.worker.process_input)
-        self.lineEdit_2.textChanged.connect(self.worker.process_input)
-        
-        # Connect worker's signal to update label
-        self.worker.label_update_signal.connect(self.update_label)
+        self.thread = threading.Thread(target = self.update_utc_location)
+        self.thread.start()
 
-    def update_label(self, selected_time_zone):
-        print("Received Time Zone:", selected_time_zone)  # Debug print
-        self.label.setText(f"Selected Zone: {selected_time_zone}")
-
+    def update_utc_location(self):
+        global selected_location, selected_time_interval, download_time_interval
+        try:
+            download_time_interval = []
+            selected_location = []
+            selected_time_interval = []
+            selected_location.append(float(self.lineEdit.text()))
+            selected_location.append(float(self.lineEdit_2.text()))
+            start_datetime = self.dateTimeEdit.dateTime()
+            end_datetime = self.dateTimeEdit_2.dateTime()
+            string_start_date = start_datetime.toString("dd/MM/yy hh:mm:ss")
+            string_end_date = end_datetime.toString("dd/MM/yy hh:mm:ss")
+            selected_time_interval.append(string_start_date)
+            selected_time_interval.append(string_end_date)
+            time_zone_finder.get_utc_time_from_coordinates(selected_location)
+            selected_time_zone = time_zone_finder.utc_time_zone
+            self.label.setText(f"Selected Zone: {selected_time_zone}")
+        except ValueError:
+            self.label.setText(f"Selected Zone: None")
     
     def okay_clicked(self):
         global selected_location, selected_time_interval, download_time_interval
@@ -160,12 +147,12 @@ class Ui_MainWindow(object):
         download_time_interval.append(utc_start_time)
         download_time_interval.append(utc_end_time)
         date_interval_list = self.create_date_list(utc_start_time,utc_end_time)
-        '''for file_date in date_interval_list:
+        for file_date in date_interval_list:
             hour_url = createURL.create_url(file_date)
             progressbardownload.list_url.append(hour_url)
         print(progressbardownload.list_url)
 
-        progressbardownload.set_url = final_url
+        '''progressbardownload.set_url = final_url
         temp_file_name = final_url.split('/')
         progressbardownload.file_name = temp_file_name[-1]
         print(progressbardownload.set_url)
@@ -198,7 +185,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "METCM Generator"))
-        self.label.setText(_translate("MainWindow", "Selected Zone:"))
+        self.label.setText(_translate("MainWindow", "Time Zone:"))
         self.label_2.setText(_translate("MainWindow", "Operation Start Time"))
         self.label_3.setText(_translate("MainWindow", "Operation End Time"))
         self.label_4.setText(_translate("MainWindow", "Latitude"))
