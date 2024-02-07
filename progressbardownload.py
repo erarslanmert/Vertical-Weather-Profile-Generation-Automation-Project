@@ -67,16 +67,21 @@ class ProgressBarWindow(QDialog):
         self.layout = QVBoxLayout(self)
 
         self.progress_bars = []
+        self.size_labels = []
         self.download_threads = []
 
         for url, destination in zip(urls, destinations):
             label = QLabel(f"File in progress: {destination}")
             self.layout.addWidget(label)
 
+            size_label = QLabel("Downloaded Size: 0 / 0 MB")
+            self.layout.addWidget(size_label)
+
             progress_bar = QProgressBar(self)
             self.layout.addWidget(progress_bar)
 
             self.progress_bars.append(progress_bar)
+            self.size_labels.append(size_label)
 
             download_thread = DownloadThread(url, destination)
             download_thread.progress_updated.connect(self.update_progress)
@@ -94,6 +99,13 @@ class ProgressBarWindow(QDialog):
         index = self.download_threads.index(sender)
         self.progress_bars[index].setValue(progress_percentage)
 
+        total_size_mb = total_size / (1024 * 1024)
+        downloaded_size_mb = downloaded_size / (1024 * 1024)
+
+        size_label = self.size_labels[index]  # Get the size label corresponding to this progress bar
+        size_label.setText(f"Downloaded Size: {downloaded_size_mb:.2f} / {total_size_mb:.2f} MB")
+
+
 
 class FileManagerDialog(QDialog):
     def __init__(self):
@@ -105,7 +117,6 @@ class FileManagerDialog(QDialog):
         if dialog.exec() == QFileDialog.DialogCode.Accepted:
             self.selected_directory = dialog.selectedFiles()[0]
             print(f"Selected Directory: {self.selected_directory}")
-            
             destinations = [f"{self.selected_directory}/{file_name}" for file_name in file_names]
             progress_bar_window = ProgressBarWindow(set_url, destinations)
             progress_bar_window.exec()
