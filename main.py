@@ -6,6 +6,7 @@ import sys
 import time_zone_finder, createURL, progressbardownload
 from datetime import datetime, timedelta
 import threading
+import time
 
 selected_time_zone = ''
 selected_time_interval = []
@@ -123,6 +124,7 @@ class Ui_MainWindow(object):
             self.label.setText(f"Selected Zone: {selected_time_zone}")
         except ValueError:
             self.label.setText(f"Selected Zone: None")
+        time.sleep(0.1)
     
     def okay_clicked(self):
         global selected_location, selected_time_interval, download_time_interval
@@ -149,15 +151,11 @@ class Ui_MainWindow(object):
         date_interval_list = self.create_date_list(utc_start_time,utc_end_time)
         for file_date in date_interval_list:
             hour_url = createURL.create_url(file_date)
-            progressbardownload.list_url.append(hour_url)
-        print(progressbardownload.list_url)
+            progressbardownload.set_url.append(hour_url)
+            temp_file_name = hour_url.split('/')
+            progressbardownload.file_names.append(temp_file_name[-1])
 
-        '''progressbardownload.set_url = final_url
-        temp_file_name = final_url.split('/')
-        progressbardownload.file_name = temp_file_name[-1]
-        print(progressbardownload.set_url)
-        print(progressbardownload.file_name)
-        progressbardownload.start_download()'''
+        progressbardownload.start_download()
         
 
     def create_date_list(self, start_date_str, end_date_str):

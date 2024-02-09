@@ -5,8 +5,8 @@ from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6 import QtGui
 from time import time
 
-set_url = ""
-file_name = ""
+set_url = []
+file_names = []
 list_url = []
 
 class DownloadThread(QThread):
@@ -61,7 +61,7 @@ class ProgressBarWindow(QDialog):
         super().__init__()
 
         self.setWindowTitle("File Download Progress")
-        self.setGeometry(200, 200, 400, 200)
+        self.setGeometry(200, 200, 800, 200)
         self.setWindowIcon(QtGui.QIcon("Images\M.png"))
 
         self.layout = QVBoxLayout(self)
@@ -71,7 +71,8 @@ class ProgressBarWindow(QDialog):
         self.download_threads = []
 
         for url, destination in zip(urls, destinations):
-            label = QLabel(f"File in progress: {destination}")
+            print(url)
+            label = QLabel(f"Download in progress: {destination}")
             self.layout.addWidget(label)
 
             size_label = QLabel("Downloaded Size: 0 / 0 MB")
@@ -126,13 +127,6 @@ def start_download():
     dialog = FileManagerDialog()
     dialog.exec()
     sys.exit(app.exec())
-
-# Example usage
-set_url = ['https://ftpprd.ncep.noaa.gov/data/nccf/com/gfs/prod/gfs.20240207/06/atmos/gfs.t06z.pgrb2.0p25.f010', 'https://ftpprd.ncep.noaa.gov/data/nccf/com/gfs/prod/gfs.20240207/06/atmos/gfs.t06z.pgrb2.0p25.f011', 'https://ftpprd.ncep.noaa.gov/data/nccf/com/gfs/prod/gfs.20240207/06/atmos/gfs.t06z.pgrb2.0p25.f012', 'https://ftpprd.ncep.noaa.gov/data/nccf/com/gfs/prod/gfs.20240207/06/atmos/gfs.t06z.pgrb2.0p25.f013'] 
-file_names = ["file1", "file2", "file3", "file4", "file5", "file6"] # List of corresponding file names
-
-start_download()
-
 
 
 
