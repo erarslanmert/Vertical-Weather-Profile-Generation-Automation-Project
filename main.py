@@ -1,7 +1,7 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QApplication
+from PyQt6.QtWidgets import QMainWindow, QApplication, QDateTimeEdit
 from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import QDateTime, Qt, QLocale
+from PyQt6.QtCore import QDateTime, Qt, QLocale, QThread, pyqtSignal
 import sys
 import time_zone_finder, createURL, progressbardownload
 from datetime import datetime, timedelta
@@ -13,6 +13,41 @@ selected_time_interval = []
 selected_location = []
 download_time_interval = []
 
+class WorkerThread(QThread):
+    text_changed = pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.text1 = ""
+        self.text2 = ""
+
+    def run(self):
+        while True:
+            # Simulating some heavy computation or processing
+            # Replace this with your actual computation or processing
+            time.sleep(0.1)
+
+            try:
+                download_time_interval = []
+                selected_location = []
+                selected_time_interval = []
+                selected_location.append(float(self.text1))
+                selected_location.append(float(self.text2))
+                start_datetime = QDateTimeEdit().dateTime()
+                end_datetime = QDateTimeEdit().dateTime()
+                string_start_date = start_datetime.toString("dd/MM/yy hh:mm:ss")
+                string_end_date = end_datetime.toString("dd/MM/yy hh:mm:ss")
+                selected_time_interval.append(string_start_date)
+                selected_time_interval.append(string_end_date)
+                time_zone_finder.get_utc_time_from_coordinates(selected_location)
+                selected_time_zone = time_zone_finder.utc_time_zone
+                self.text_changed.emit(f"Selected Zone: {selected_time_zone}")
+            except ValueError:
+                self.text_changed.emit(f"Selected Zone: None")
+
+    def update_texts(self, text1, text2):
+        self.text1 = text1
+        self.text2 = text2
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -99,32 +134,21 @@ class Ui_MainWindow(object):
         self.lineEdit.setText('51.987327')
         self.lineEdit_2.setText('5.933481')
 
-        self.lineEdit.textChanged.connect(self.update_utc_location)
-        self.lineEdit_2.textChanged.connect(self.update_utc_location)
+        self.lineEdit.textChanged.connect(self.update_thread_texts)
+        self.lineEdit_2.textChanged.connect(self.update_thread_texts)
         
-        self.thread = threading.Thread(target = self.update_utc_location)
-        self.thread.start()
+        self.worker_thread = WorkerThread()
+        self.worker_thread.text_changed.connect(self.update_label)
+        self.worker_thread.start()
 
-    def update_utc_location(self):
-        global selected_location, selected_time_interval, download_time_interval
-        try:
-            download_time_interval = []
-            selected_location = []
-            selected_time_interval = []
-            selected_location.append(float(self.lineEdit.text()))
-            selected_location.append(float(self.lineEdit_2.text()))
-            start_datetime = self.dateTimeEdit.dateTime()
-            end_datetime = self.dateTimeEdit_2.dateTime()
-            string_start_date = start_datetime.toString("dd/MM/yy hh:mm:ss")
-            string_end_date = end_datetime.toString("dd/MM/yy hh:mm:ss")
-            selected_time_interval.append(string_start_date)
-            selected_time_interval.append(string_end_date)
-            time_zone_finder.get_utc_time_from_coordinates(selected_location)
-            selected_time_zone = time_zone_finder.utc_time_zone
-            self.label.setText(f"Selected Zone: {selected_time_zone}")
-        except ValueError:
-            self.label.setText(f"Selected Zone: None")
-        time.sleep(0.1)
+    def update_thread_texts(self):
+        text1 = self.lineEdit.text()
+        text2 = self.lineEdit_2.text()
+        self.worker_thread.update_texts(text1, text2)
+
+    def update_label(self, text):
+        self.label.setText(text)
+
     
     def okay_clicked(self):
         global selected_location, selected_time_interval, download_time_interval
