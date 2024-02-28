@@ -72,13 +72,5 @@ def convert_to_utc_with_offset(input_date_str, offset_str):
 
     return output_date_str
 
-# Example usage
-'''input_date_str = "01/01/23 10:35:00"
-offset_str = 'UTC + 05:00'
 
-output_date_str = convert_to_utc_with_offset(input_date_str, offset_str)
-
-print(f"Input Date and Time: {input_date_str}")
-print(f"Offset: {offset_str}")
-print(f"UTC Date and Time: {output_date_str}")'''
 

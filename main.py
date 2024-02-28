@@ -1,17 +1,20 @@
+import os
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QApplication, QDateTimeEdit
+from PyQt6.QtWidgets import QMainWindow, QApplication, QDateTimeEdit, QDialog, QFileDialog
 from PyQt6.QtGui import QDoubleValidator
 from PyQt6.QtCore import QDateTime, Qt, QLocale, QThread, pyqtSignal
 import sys
 import time_zone_finder, createURL, progressbardownload
 from datetime import datetime, timedelta
-import threading
 import time
+import profilegenerator, dashboard
 
 selected_time_zone = ''
 selected_time_interval = []
 selected_location = []
 download_time_interval = []
+file_dir_list = []
+browsed_files = []
 
 class WorkerThread(QThread):
     text_changed = pyqtSignal(str)
@@ -49,12 +52,30 @@ class WorkerThread(QThread):
         self.text1 = text1
         self.text2 = text2
 
+
+class FileManagerDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.open_file_dialog()
+
+    def open_file_dialog(self):
+        global browsed_files
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)  # Allow selecting multiple files
+        if dialog.exec() == QFileDialog.DialogCode.Accepted:
+            selected_files = dialog.selectedFiles()
+            browsed_files = selected_files
+            if selected_files:
+                print("Selected Files:")
+                for file_path in selected_files:
+                    print(file_path)
+
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(366, 367)
         MainWindow.setWindowIcon(QtGui.QIcon("Images\M.png"))
-
+        MainWindow.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, False)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         
@@ -111,9 +132,16 @@ class Ui_MainWindow(object):
         self.lineEdit_2.setValidator(double_validator)
 
         self.buttonBox = QtWidgets.QDialogButtonBox(parent=self.centralwidget)
-        self.buttonBox.setGeometry(QtCore.QRect(100, 300, 156, 23))
+        self.buttonBox.setGeometry(QtCore.QRect(75, 300, 220, 23))
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.StandardButton.Cancel|QtWidgets.QDialogButtonBox.StandardButton.Ok)
         self.buttonBox.setObjectName("buttonBox")
+        browse_button = self.buttonBox.addButton("Browse...", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+        browse_button.clicked.connect(self.browse_files)
+
+        # Change the text of the "Ok" button to "Download"
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setText("Download")
+
+
 
         self.label = QtWidgets.QLabel(parent=self.centralwidget)
         self.label.setGeometry(QtCore.QRect(60, 260, 250, 20))
@@ -151,7 +179,7 @@ class Ui_MainWindow(object):
 
     
     def okay_clicked(self):
-        global selected_location, selected_time_interval, download_time_interval
+        global selected_location, selected_time_interval, download_time_interval, file_dir_list
         download_time_interval = []
         selected_location = []
         selected_time_interval = []
@@ -165,7 +193,6 @@ class Ui_MainWindow(object):
         selected_time_interval.append(string_end_date)
         time_zone_finder.get_utc_time_from_coordinates(selected_location)
         selected_time_zone = time_zone_finder.utc_time_zone
-        print(selected_time_zone)
         offset_part = selected_time_zone.split(' ')
         offset_involved = ' '.join(offset_part[1:])
         utc_start_time = time_zone_finder.convert_to_utc_with_offset(selected_time_interval[0], offset_involved)
@@ -178,9 +205,55 @@ class Ui_MainWindow(object):
             progressbardownload.set_url.append(hour_url)
             temp_file_name = hour_url.split('/')
             progressbardownload.file_names.append(temp_file_name[-1])
-
         progressbardownload.start_download()
-        
+        if progressbardownload.finished_flag == 1:
+            current_directory = os.path.dirname(os.path.realpath(__file__))
+            profilegenerator.input_dir = f'{progressbardownload.directories[0]}'
+            profilegenerator.output_dir = current_directory
+            profilegenerator.input_lat = float(selected_location[0])
+            profilegenerator.input_lon = float(selected_location[-1])
+            profilegenerator.input_date = string_start_date
+            profilegenerator.input_wrf_time = str(start_datetime.time())
+            profilegenerator.start_reading_gfs()
+            dashboard.open_dialog()
+        else:
+            pass
+
+
+
+    def browse_files(self):
+        FileManagerDialog()
+        print(browsed_files)
+        download_time_interval = []
+        selected_location = []
+        selected_time_interval = []
+        selected_location.append(float(self.lineEdit.text()))
+        selected_location.append(float(self.lineEdit_2.text()))
+        start_datetime = self.dateTimeEdit.dateTime()
+        end_datetime = self.dateTimeEdit_2.dateTime()
+        string_start_date = start_datetime.toString("dd/MM/yy hh:mm:ss")
+        string_end_date = end_datetime.toString("dd/MM/yy hh:mm:ss")
+        selected_time_interval.append(string_start_date)
+        selected_time_interval.append(string_end_date)
+        time_zone_finder.get_utc_time_from_coordinates(selected_location)
+        selected_time_zone = time_zone_finder.utc_time_zone
+        offset_part = selected_time_zone.split(' ')
+        offset_involved = ' '.join(offset_part[1:])
+        utc_start_time = time_zone_finder.convert_to_utc_with_offset(selected_time_interval[0], offset_involved)
+        utc_end_time = time_zone_finder.convert_to_utc_with_offset(selected_time_interval[-1], offset_involved)
+        download_time_interval.append(utc_start_time)
+        download_time_interval.append(utc_end_time)
+        current_directory = os.path.dirname(os.path.realpath(__file__))
+        profilegenerator.input_dir = browsed_files[0]
+        profilegenerator.output_dir = current_directory
+        profilegenerator.input_lat = float(selected_location[0])
+        profilegenerator.input_lon = float(selected_location[-1])
+        profilegenerator.input_date = string_start_date
+        profilegenerator.input_wrf_time = str(start_datetime.time())
+        profilegenerator.start_reading_gfs()
+        dashboard.open_dialog()
+
+
 
     def create_date_list(self, start_date_str, end_date_str):
         date_format = "%d/%m/%y %H:%M:%S"
@@ -219,4 +292,4 @@ if __name__ == "__main__":
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
     MainWindow.show()
-    sys.exit(app.exec())
+    app.exec()

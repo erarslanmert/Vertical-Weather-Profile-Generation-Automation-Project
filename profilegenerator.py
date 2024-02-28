@@ -1,18 +1,23 @@
 import os
 from pathlib import Path
-from multiprocessing.pool import ThreadPool, Pool
+from multiprocessing.pool import Pool
 from functools import partial
-import numpy as np
-import pytz
 import xarray as xr
 import metpy.calc as mpcalc
 from metpy.units import units
 import pandas as pd
-import DSInfo
-import cfgrib
 import glob
+import pytz
+
+import dashboard
 
 dsm = []
+input_dir = ''
+output_dir = ''
+input_lat = 0
+input_lon = 0
+input_date = ''
+input_wrf_time = ''
 class VirtualSoundingGenMultiGFS:
 
     def __init__(self):
@@ -27,18 +32,30 @@ class VirtualSoundingGenMultiGFS:
         self.baseInputDir = None
         self.baseOutputDir = None
 
+
+    def getDSInfo(self):
+
+        gfs_file_dict = {'basefiledir_s': input_dir,
+                         'baseOutput_s': output_dir,
+                         'wrfDate': input_date,
+                         'wrfTime': input_wrf_time,
+                         'wrfTz': pytz.timezone('UTC'),
+                         'wsLat': input_lat,
+                         'wsLon': input_lon
+                         }
+
+        dict_DSInfo = {'file_key': gfs_file_dict
+                       }
+
+        return dict_DSInfo
+
     def init(self, dsInfoKey):
         global dsm
-        dsInfoDict = DSInfo.getDSInfo()
+        dsInfoDict = self.getDSInfo()
         dsInfo = dsInfoDict[dsInfoKey]
 
-        basedirDS = r'\Users\eraslan\Atmospheric Module\Application'
-        basedirOut = f'C:\\Users\\eraslan\\Atmospheric Module\\Application{dsInfo["basedir_Out_s"]}/'
-        basedirGFS = basedirDS + f'GFS/{dsInfo["basedir_GFS_s"]}/climate-gfs-{dsInfo["basedir_GFS_s"]}/'
-        basefiledir = dsInfo['basefiledir_s']
-
-        self.baseInputDir = f'C:\\Users\\eraslan\\Atmospheric Module\\Application\\GFS\\BU-202311\\climate-gfs-BU-202311\\gfs\\20231116\\gfs.t12z.pgrb2.0p25.f000'
-        self.baseOutputDir = f'C:\\Users\\eraslan\\Atmospheric Module\\Application\\GFS\\BU-202311\\climate-gfs-BU-202311\\gfs\\20231116'
+        self.baseInputDir = input_dir
+        self.baseOutputDir = output_dir
 
         self.wrfDate = dsInfo['wrfDate']
         self.wrfTime = dsInfo['wrfTime']
@@ -73,7 +90,7 @@ class VirtualSoundingGenMultiGFS:
         print("<II> Done")
 
     def genProfile(self, wrf_time, wsLat, wsLon, ds):
-        dprofile = ds.interp(valid_time=wrf_time, latitude=wsLat, longitude=wsLon)
+        dprofile = ds.interp(valid_time=wrf_time, latitude=wsLat, longitude=wsLon, method = 'nearest')
 
         hght = mpcalc.geopotential_to_height(dprofile.gh.values * units.meter * self.sett_g0)
         p = dprofile.isobaricInhPa
@@ -111,7 +128,7 @@ class VirtualSoundingGenMultiGFS:
         ws_RH = rh.values[0]
         ws_wind_speed = wind_speed.values[0]
         ws_wind_dir = wind_dir.values[0]
-        print(ws_wind_speed)
+
 
         header_data = {'SystemTrademarkAndModel': ['VirtualSounding'],
                        'SoftwareVersion': ['N/A'],
@@ -154,14 +171,12 @@ class VirtualSoundingGenMultiGFS:
 
         dfh.to_csv(path_or_buf=fileOutput, sep='\t', header=False)
         dft.to_csv(path_or_buf=fileOutput, sep='\t', mode='a', index_label='n')
-
+        dashboard.df = dft
         print('Virtual Profile written: ' + os.path.basename(fileOutput))
         print(dfh)
-        print(dft['Speed'])
+        print(dft)
 
 
-
-if __name__ == "__main__":
+def start_reading_gfs():
     vs_gen = VirtualSoundingGenMultiGFS()
-    ds_info_key = "your_dataset_info_key"
-    vs_gen.init('BU_202311_GFS')
+    vs_gen.init('file_key')
