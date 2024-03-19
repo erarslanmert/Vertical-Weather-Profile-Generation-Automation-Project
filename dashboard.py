@@ -9,7 +9,7 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QStackedWidget, QWidget, QTableWidget, QFrame, QPushButton, \
-    QSizePolicy
+    QSizePolicy, QLabel, QSpacerItem, QHeaderView
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.gridspec as gridspec
@@ -38,7 +38,7 @@ class Ui_Dialog(object):
         self.tableWidget = QTableWidget(parent=self.table_page)
         table_layout.addWidget(self.tableWidget)
         self.stacked_widget.addWidget(self.table_page)
-
+        self.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         # Graph Page
         self.graph_page = QWidget()
         graph_layout = QVBoxLayout(self.graph_page)
@@ -48,19 +48,37 @@ class Ui_Dialog(object):
         graph_layout.addWidget(self.frame)
         self.stacked_widget.addWidget(self.graph_page)
 
+        self.label = QtWidgets.QLabel()
+        self.label.setFixedSize(400, 20)
+        self.label.setText("Global Forecast System Data Table - Vertical Weather Profile")
+        self.label.setScaledContents(True)
+        self.label.setObjectName("label")
+
+
         # Button Box
         self.buttonBox = QtWidgets.QDialogButtonBox(parent=Dialog)
         self.buttonBox.setStandardButtons(
             QtWidgets.QDialogButtonBox.StandardButton.Cancel | QtWidgets.QDialogButtonBox.StandardButton.Ok)
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setText("Generate METCM")
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel).setText("Close")
 
+        ok_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
+        ok_button.setMinimumSize(150, 50)  # Adjust the size as needed
+        ok_button.setMaximumSize(150, 50)  # Adjust the size as needed
+
+        cancel_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        cancel_button.setMinimumSize(150, 50)  # Adjust the size as needed
+        cancel_button.setMaximumSize(150, 50)  # Adjust the size as needed
 
         # Add navigation buttons
         self.prev_button = QPushButton("<", parent=Dialog)
         self.next_button = QPushButton(">", parent=Dialog)
-        self.prev_button.setFixedSize(100, 20)
-        self.next_button.setFixedSize(100, 20)
+        self.prev_button.setFixedSize(70, 50)
+        self.next_button.setFixedSize(70, 50)
+
 
         button_layout.addWidget(self.prev_button)
+        button_layout.addWidget(self.label)
         button_layout.addWidget(self.next_button)
         main_layout.addLayout(button_layout)
         main_layout.addWidget(self.stacked_widget)
@@ -79,17 +97,22 @@ class Ui_Dialog(object):
         self.prev_button.clicked.connect(self.prev_page)
         self.next_button.clicked.connect(self.next_page)
 
+        self.label_list = ["Global Forecast System Data Table - Vertical Weather Profile", "Vertical Weather Profile Data Parameters vs Height Graphs"]
+
+
     def prev_page(self):
         current_index = self.stacked_widget.currentIndex()
         new_index = (current_index - 1) % self.stacked_widget.count()
         self.stacked_widget.setCurrentIndex(new_index)
         self.stacked_widget.repaint()
+        self.label.setText(self.label_list[new_index])
 
     def next_page(self):
         current_index = self.stacked_widget.currentIndex()
         new_index = (current_index + 1) % self.stacked_widget.count()
         self.stacked_widget.setCurrentIndex(new_index)
         self.stacked_widget.repaint()
+        self.label.setText(self.label_list[new_index])
 
     def setup_table(self, df):
         # Set the number of rows and columns in the QTableWidget
@@ -117,20 +140,20 @@ class Ui_Dialog(object):
 
     def plot(self, df):
         # Filter columns to plot (excluding specified columns)
-        columns_to_plot = [col for col in df.columns if col not in ['HeightMSL', 'Lat', 'Lon', 'Elapsed time']]
+        columns_to_plot = [col for col in df.columns if col not in ['HeightMSL', 'Lat', 'Lon', 'Elapsed time', 'Pm', 'HeightE']]
 
         num_plots = len(columns_to_plot)
-        gs = gridspec.GridSpec(2, 4)  # Define a 2x4 grid for 2 horizontal and 4 vertical plots
+        gs = gridspec.GridSpec(2, 3)  # Define a 2x4 grid for 2 horizontal and 4 vertical plots
 
         for i, column in enumerate(columns_to_plot):
-            row = i // 4  # Determine row index
-            col = i % 4   # Determine column index
+            row = i // 3  # Determine row index
+            col = i % 3   # Determine column index
             ax = self.figure.add_subplot(gs[row, col])  # Specify the grid location for each subplot
             ax.plot(df[column], df['HeightMSL'], label=column)
             ax.set_xlabel(column)
             ax.set_ylabel('HeightMSL')
             ax.set_title(f"{column} vs. HeightMSL")  # Add title to each subplot
-            ax.legend(loc='upper right')  # Place legend at upper right corner
+
 
         gs.tight_layout(self.figure, h_pad=2.0, w_pad=2.0)
         self.figure.subplots_adjust(hspace=0.5, wspace=0.3)# Adjust layout with equal padding

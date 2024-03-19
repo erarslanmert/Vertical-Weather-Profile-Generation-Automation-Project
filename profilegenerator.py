@@ -6,10 +6,8 @@ import xarray as xr
 import metpy.calc as mpcalc
 from metpy.units import units
 import pandas as pd
-import glob
 import pytz
-
-import dashboard
+import dashboard, create_METCM
 
 dsm = []
 input_dir = ''
@@ -66,11 +64,10 @@ class VirtualSoundingGenMultiGFS:
 
         wsLat = dsInfo['wsLat']
         wsLon = dsInfo['wsLon']
-
-        files = sorted(glob.glob(self.baseInputDir))
+        files = self.baseInputDir
 
         print("<II> Opening dataset")
-        dsm = xr.open_mfdataset(paths=files, engine='cfgrib', combine='nested', concat_dim=['valid_time'], parallel=True, chunks= {'time': 1},
+        dsm = xr.open_mfdataset(paths=files, engine='cfgrib', combine='nested', concat_dim='valid_time', parallel=False, chunks= {'time': 1},
                                 backend_kwargs={'filter_by_keys': {'typeOfLevel': 'isobaricInhPa'}, 'errors': 'ignore'})
 
         print(dsm)
@@ -90,7 +87,7 @@ class VirtualSoundingGenMultiGFS:
         print("<II> Done")
 
     def genProfile(self, wrf_time, wsLat, wsLon, ds):
-        dprofile = ds.interp(valid_time=wrf_time, latitude=wsLat, longitude=wsLon, method = 'nearest')
+        dprofile = ds.interp(valid_time=wrf_time, latitude=wsLat, longitude=wsLon)
 
         hght = mpcalc.geopotential_to_height(dprofile.gh.values * units.meter * self.sett_g0)
         p = dprofile.isobaricInhPa
@@ -168,6 +165,10 @@ class VirtualSoundingGenMultiGFS:
         fileOutput = f"{self.baseOutputDir}_{aux_date_str}.csv"
 
         Path(os.path.dirname(fileOutput)).mkdir(parents=True, exist_ok=True)
+
+        create_METCM.header_data = header_data
+        create_METCM.table_data = table_data
+
 
         dfh.to_csv(path_or_buf=fileOutput, sep='\t', header=False)
         dft.to_csv(path_or_buf=fileOutput, sep='\t', mode='a', index_label='n')

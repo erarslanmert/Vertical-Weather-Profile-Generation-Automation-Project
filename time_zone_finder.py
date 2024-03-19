@@ -59,7 +59,8 @@ def convert_to_utc_with_offset(input_date_str, offset_str):
     offset_match = re.match(r"UTC\s*([+-])\s*(\d{1,2}):?(\d{0,2})", offset_str)
     if offset_match:
         sign, hours, minutes = offset_match.groups()
-        offset = timedelta(hours=int(sign + hours), minutes=int(sign + minutes if minutes else 0))
+        sign_multiplier = -1 if sign == "-" else 1
+        offset = timedelta(hours=int(hours) * sign_multiplier, minutes=int(minutes) * sign_multiplier)
     else:
         raise ValueError("Invalid offset string format")
 

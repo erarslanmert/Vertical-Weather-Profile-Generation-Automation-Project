@@ -1,13 +1,15 @@
 import os
+import threading
+
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QApplication, QDateTimeEdit, QDialog, QFileDialog
-from PyQt6.QtGui import QDoubleValidator
-from PyQt6.QtCore import QDateTime, Qt, QLocale, QThread, pyqtSignal
+from PyQt6.QtWidgets import QMainWindow, QApplication, QDateTimeEdit, QDialog, QFileDialog, QWidget, QVBoxLayout, QLabel
+from PyQt6.QtGui import QDoubleValidator, QMovie
+from PyQt6.QtCore import QDateTime, Qt, QLocale, QThread, pyqtSignal, QTimer
 import sys
 import time_zone_finder, createURL, progressbardownload
 from datetime import datetime, timedelta
 import time
-import profilegenerator, dashboard
+import profilegenerator, dashboard, loading_page
 
 selected_time_zone = ''
 selected_time_interval = []
@@ -208,7 +210,7 @@ class Ui_MainWindow(object):
         progressbardownload.start_download()
         if progressbardownload.finished_flag == 1:
             current_directory = os.path.dirname(os.path.realpath(__file__))
-            profilegenerator.input_dir = f'{progressbardownload.directories[0]}'
+            profilegenerator.input_dir = sorted(f'{progressbardownload.directories[0]}')
             profilegenerator.output_dir = current_directory
             profilegenerator.input_lat = float(selected_location[0])
             profilegenerator.input_lon = float(selected_location[-1])
@@ -244,7 +246,7 @@ class Ui_MainWindow(object):
         download_time_interval.append(utc_start_time)
         download_time_interval.append(utc_end_time)
         current_directory = os.path.dirname(os.path.realpath(__file__))
-        profilegenerator.input_dir = browsed_files[0]
+        profilegenerator.input_dir = sorted(browsed_files)
         profilegenerator.output_dir = current_directory
         profilegenerator.input_lat = float(selected_location[0])
         profilegenerator.input_lon = float(selected_location[-1])
