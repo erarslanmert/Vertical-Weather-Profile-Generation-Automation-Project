@@ -178,6 +178,11 @@ class VirtualSoundingGenMultiGFS:
         print(dft)
 
 
+
+        dashboard.input_header = header_data
+        dashboard.input_table = table_data
+
+
 def start_reading_gfs():
     vs_gen = VirtualSoundingGenMultiGFS()
     vs_gen.init('file_key')

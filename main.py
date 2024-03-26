@@ -62,15 +62,18 @@ class FileManagerDialog(QDialog):
 
     def open_file_dialog(self):
         global browsed_files
-        dialog = QFileDialog(self)
-        dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)  # Allow selecting multiple files
-        if dialog.exec() == QFileDialog.DialogCode.Accepted:
-            selected_files = dialog.selectedFiles()
-            browsed_files = selected_files
-            if selected_files:
-                print("Selected Files:")
-                for file_path in selected_files:
-                    print(file_path)
+        try:
+            dialog = QFileDialog(self)
+            dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)  # Allow selecting multiple files
+            if dialog.exec() == QFileDialog.DialogCode.Accepted:
+                selected_files = dialog.selectedFiles()
+                browsed_files = selected_files
+                if selected_files:
+                    print("Selected Files:")
+                    for file_path in selected_files:
+                        print(file_path)
+        except OSError:
+            pass
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -224,36 +227,40 @@ class Ui_MainWindow(object):
 
 
     def browse_files(self):
-        FileManagerDialog()
-        print(browsed_files)
-        download_time_interval = []
-        selected_location = []
-        selected_time_interval = []
-        selected_location.append(float(self.lineEdit.text()))
-        selected_location.append(float(self.lineEdit_2.text()))
-        start_datetime = self.dateTimeEdit.dateTime()
-        end_datetime = self.dateTimeEdit_2.dateTime()
-        string_start_date = start_datetime.toString("dd/MM/yy hh:mm:ss")
-        string_end_date = end_datetime.toString("dd/MM/yy hh:mm:ss")
-        selected_time_interval.append(string_start_date)
-        selected_time_interval.append(string_end_date)
-        time_zone_finder.get_utc_time_from_coordinates(selected_location)
-        selected_time_zone = time_zone_finder.utc_time_zone
-        offset_part = selected_time_zone.split(' ')
-        offset_involved = ' '.join(offset_part[1:])
-        utc_start_time = time_zone_finder.convert_to_utc_with_offset(selected_time_interval[0], offset_involved)
-        utc_end_time = time_zone_finder.convert_to_utc_with_offset(selected_time_interval[-1], offset_involved)
-        download_time_interval.append(utc_start_time)
-        download_time_interval.append(utc_end_time)
-        current_directory = os.path.dirname(os.path.realpath(__file__))
-        profilegenerator.input_dir = sorted(browsed_files)
-        profilegenerator.output_dir = current_directory
-        profilegenerator.input_lat = float(selected_location[0])
-        profilegenerator.input_lon = float(selected_location[-1])
-        profilegenerator.input_date = string_start_date
-        profilegenerator.input_wrf_time = str(start_datetime.time())
-        profilegenerator.start_reading_gfs()
-        dashboard.open_dialog()
+        try:
+            FileManagerDialog()
+            print(browsed_files)
+            download_time_interval = []
+            selected_location = []
+            selected_time_interval = []
+            selected_location.append(float(self.lineEdit.text()))
+            selected_location.append(float(self.lineEdit_2.text()))
+            start_datetime = self.dateTimeEdit.dateTime()
+            end_datetime = self.dateTimeEdit_2.dateTime()
+            string_start_date = start_datetime.toString("dd/MM/yy hh:mm:ss")
+            string_end_date = end_datetime.toString("dd/MM/yy hh:mm:ss")
+            selected_time_interval.append(string_start_date)
+            selected_time_interval.append(string_end_date)
+            time_zone_finder.get_utc_time_from_coordinates(selected_location)
+            selected_time_zone = time_zone_finder.utc_time_zone
+            offset_part = selected_time_zone.split(' ')
+            offset_involved = ' '.join(offset_part[1:])
+            utc_start_time = time_zone_finder.convert_to_utc_with_offset(selected_time_interval[0], offset_involved)
+            utc_end_time = time_zone_finder.convert_to_utc_with_offset(selected_time_interval[-1], offset_involved)
+            download_time_interval.append(utc_start_time)
+            download_time_interval.append(utc_end_time)
+            current_directory = os.path.dirname(os.path.realpath(__file__))
+            profilegenerator.input_dir = sorted(browsed_files)
+            profilegenerator.output_dir = current_directory
+            profilegenerator.input_lat = float(selected_location[0])
+            profilegenerator.input_lon = float(selected_location[-1])
+            profilegenerator.input_date = string_start_date
+            profilegenerator.input_wrf_time = str(start_datetime.time())
+            profilegenerator.start_reading_gfs()
+            dashboard.open_dialog()
+        except OSError:
+            print('Browsing cancelled.')
+            pass
 
 
 

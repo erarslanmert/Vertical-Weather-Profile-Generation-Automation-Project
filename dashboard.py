@@ -9,15 +9,40 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QStackedWidget, QWidget, QTableWidget, QFrame, QPushButton, \
-    QSizePolicy, QLabel, QSpacerItem, QHeaderView
+    QSizePolicy, QLabel, QSpacerItem, QHeaderView, QDialog, QFileDialog
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.gridspec as gridspec
+import create_METCM
 
 
 
 df: ''
+input_header = {}
+input_table = {}
+output_directory = ''
 
+class FileManagerDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.save_file_dialog()
+
+    def save_file_dialog(self):
+        global browsed_files, output_directory
+        try:
+            dialog = QFileDialog(self)
+            dialog.setFileMode(QFileDialog.FileMode.AnyFile)  # Allow selecting any file type
+            dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)  # Set to save mode
+            dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)  # Only show directories
+            dialog.setNameFilter("Text files (*.txt)")  # Set filter to show only txt files
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                selected_directory = dialog.selectedFiles()[0]
+                file_name = dialog.selectedNameFilter()  # Get the specified file name
+                if selected_directory:
+                    selected_file = selected_directory + '/' + file_name
+            output_directory = selected_file.replace('/Text files (*.txt)', '')
+        except UnboundLocalError:
+            pass
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
@@ -65,6 +90,7 @@ class Ui_Dialog(object):
         ok_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
         ok_button.setMinimumSize(150, 50)  # Adjust the size as needed
         ok_button.setMaximumSize(150, 50)  # Adjust the size as needed
+        ok_button.clicked.connect(self.generate_METCM)
 
         cancel_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
         cancel_button.setMinimumSize(150, 50)  # Adjust the size as needed
@@ -99,6 +125,11 @@ class Ui_Dialog(object):
 
         self.label_list = ["Global Forecast System Data Table - Vertical Weather Profile", "Vertical Weather Profile Data Parameters vs Height Graphs"]
 
+
+    def generate_METCM(self):
+        global input_table, input_header
+        FileManagerDialog()
+        create_METCM.create_message(input_header, input_table, output_directory)
 
     def prev_page(self):
         current_index = self.stacked_widget.currentIndex()

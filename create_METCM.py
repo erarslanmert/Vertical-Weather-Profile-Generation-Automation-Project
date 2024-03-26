@@ -1,106 +1,166 @@
 import pandas as pd
 import xarray
 from numpy import array
+from scipy.interpolate import interp1d
 
-header_data = {'SystemTrademarkAndModel': ['VirtualSounding'], 'SoftwareVersion': ['N/A'], 'NatoSoundingId': ['N/A'], 'ReleaseDate': ['12/03/24'], 'ReleaseTime': ['09:00:00'], 'RPLat': [51.987327], 'RPLon': [5.933481], 'RPHeightE': [110.41735360659243], 'RPHeightMSL': [110.41735360659243], 'GLPressure': [1000.0], 'GLTemp': [6.072061075713691], 'GLRH': [93.85062154375653], 'GLSpeed': [6.65629966574629], 'GLDir': [247.59063967769004], 'SondeType': ['virtual'], 'SondeId': ['01'], 'Comments': 'GFS'}
+header_data = {}
+table_data = {}
+output_path = ""
 
-
-table_data = {'Elapsed time': 0, 'HeightMSL': array([  110.41735361,   317.35299881,   528.55262195,   744.37389182,
-         965.07387527,  1423.17030211,  1905.17799546,  2412.92768189,
-        2949.35311064,  3518.48902532,  4123.12584456,  4768.59331519,
-        5463.25228503,  6221.52066325,  7056.90347743,  7975.58161387,
-        9003.00804634, 10176.33711456, 11581.91803416, 13385.81899283,
-       15911.39876372, 18109.43875835, 20165.44886701, 21528.88451813,
-       23287.65415483, 25831.84824322, 27738.55781668, 30621.06649517,
-       33310.75283161, 35929.53641667, 39909.02702969, 43031.97827681,
-       48401.33138121]), 'Pc': array([1000.,  975.,  950.,  925.,  900.,  850.,  800.,  750.,  700.,
-        650.,  600.,  550.,  500.,  450.,  400.,  350.,  300.,  250.,
-        200.,  150.,  100.,   70.,   50.,   40.,   30.,   20.,   15.,
-         10.,    7.,    5.,    3.,    2.,    1.]), 'Pm': 9999, 'Temp': array([  6.07206108,   4.34087121,   3.11359425,   1.84396719,
-         0.68423642,  -1.03984427,  -3.57618825,  -6.56406018,
-        -9.63004924, -13.14203938, -17.8101229 , -22.43245476,
-       -26.45359037, -28.56260294, -34.78421908, -42.28637753,
-       -49.84670658, -57.313463  , -59.05732149, -60.06075389,
-       -62.12946621, -65.13013161, -65.7054685 , -66.17380847,
-       -64.46195   , -54.71461114, -41.89621822, -24.20013882,
-       -11.63493701,  -9.68810054, -13.30143213, -13.27887977,
-       -12.26687811]), 'RH': array([93.85062154, 99.90647035, 98.54713973, 99.50529521, 99.46897543,
-       98.07894758, 97.30107203, 98.57458261, 83.95303889, 51.26678116,
-       52.57148398, 34.55011637, 18.25488882,  8.09974143, 42.21087094,
-       29.87336917, 18.15896931, 26.6910096 , 12.38244823,  4.77847387,
-        3.6013487 ,  3.72660762,  3.76460277,  2.72018962,  1.9949308 ,
-        0.40000001,  0.1       ,  0.        ,  0.        ,  0.        ,
-        0.        ,  0.        ,  0.        ]), 'VirtT': array([280.15589307, 278.38907265, 277.09374865, 275.77678967,
-       274.57099968, 272.78435673, 270.15723563, 267.08307568,
-       263.87318852, 260.18098935, 255.46813218, 250.77813464,
-       246.72056619, 244.59711679, 238.39636219, 230.874729  ,
-       223.30659939, 215.83884912, 214.09374743, 213.08972795,
-       211.0209466 , 208.020272  , 207.44505799, 206.97663661,
-       208.6886034 , 218.43599138, 231.25468743, 248.94986118,
-       261.51506299, 263.46189946, 259.84856787, 259.87112023,
-       260.88312189]), 'Lat': 51.987327, 'Lon': 5.933481, 'HeightE': array([  110.41735361,   317.35299881,   528.55262195,   744.37389182,
-         965.07387527,  1423.17030211,  1905.17799546,  2412.92768189,
-        2949.35311064,  3518.48902532,  4123.12584456,  4768.59331519,
-        5463.25228503,  6221.52066325,  7056.90347743,  7975.58161387,
-        9003.00804634, 10176.33711456, 11581.91803416, 13385.81899283,
-       15911.39876372, 18109.43875835, 20165.44886701, 21528.88451813,
-       23287.65415483, 25831.84824322, 27738.55781668, 30621.06649517,
-       33310.75283161, 35929.53641667, 39909.02702969, 43031.97827681,
-       48401.33138121]), 'Speed': array([ 6.65629967,  8.53692387,  8.88726991,  8.4828782 ,  8.06127197,
-        6.25458593,  5.26525982,  7.36579413,  8.80099939,  8.11282543,
-        8.63187267, 11.19575519, 15.82724936, 24.39833174, 34.07670817,
-       31.8329009 , 27.52703973, 23.75530824, 12.55885566, 11.52477061,
-       10.65803883, 11.91027729, 15.16392196, 20.10531753, 27.90379343,
-       37.02222252, 42.13113671, 42.0484136 , 27.8831098 , 19.47123951,
-       20.25781372, 26.02805682, 30.03126314]), 'Dir': array([247.59063968, 254.69936539, 269.29878823, 269.6188359 ,
-       269.19328478, 268.93286411, 270.62175704, 265.70191513,
-       266.67164464, 272.87938956, 292.59321562, 305.3948286 ,
-       309.0013591 , 319.15196236, 323.4902787 , 321.69938607,
-       318.10403093, 316.12976973, 316.05383648, 314.61514609,
-       289.15817946, 260.57370155, 262.79375746, 261.12043349,
-       260.12426669, 258.22010869, 257.80326772, 247.20433303,
-       236.80200225, 185.05229462, 123.73226058, 102.16476293,
-        84.493483  ])}
+def interpolate_values(input_dict, target_heights):
+    # Extract the original heights and Pc values from the input dictionary
+    original_heights = input_dict['HeightE']
+    original_Pc = input_dict['Pc']
+    original_Dir = input_dict['Dir']
+    original_Speed = input_dict['Speed']
+    original_Temp = input_dict['VirtT']
+    # Interpolate the Pc values for the target heights
+    interpolated_Pc = interp1d(original_heights, original_Pc, fill_value='extrapolate')(target_heights)
+    interpolated_Dir = interp1d(original_heights, original_Dir, fill_value='extrapolate')(target_heights)
+    interpolated_Speed = interp1d(original_heights, original_Speed, fill_value='extrapolate')(target_heights)
+    interpolated_virtT = interp1d(original_heights, original_Temp, fill_value='extrapolate')(target_heights)
+    return [interpolated_Speed, interpolated_Dir, interpolated_virtT, interpolated_Pc]
 
 
-
-def determine_Q(RPLat, RPLon):
-    if RPLat >= 0:
-        if 0 <= RPLon < 90:
+def determine_Q(latitude, longitude):
+    global RPLat, RPLon
+    if latitude >= 0:
+        if 0 <= longitude < 90:
             Q = 0  # Northern Hemisphere, 0 to 90° W
-        elif 90 <= RPLon < 180:
+        elif 90 <= longitude < 180:
+            RPLon = longitude - 90
             Q = 1  # Northern Hemisphere, 90° to 180° W
-        elif -90 <= RPLon < 0:
+        elif -90 <= longitude < 0:
             Q = 3  # Northern Hemisphere, 90° to 0° E
         else:
+            RPLon = longitude + 90
             Q = 2  # Northern Hemisphere, 180° to 90° E
     else:
-        if 0 <= RPLon < 90:
+        if 0 <= longitude < 90:
             Q = 5  # Southern Hemisphere, 0° to 90° W
-        elif 90 <= RPLon < 180:
+        elif 90 <= longitude < 180:
+            RPLon = longitude - 90
             Q = 6  # Southern Hemisphere, 90° to 180° W
-        elif -90 <= RPLon < 0:
+        elif -90 <= longitude < 0:
             Q = 8  # Southern Hemisphere, 90° to 0° E
         else:
+            RPLon = longitude + 90
             Q = 7  # Southern Hemisphere, 180° to 90° E
     return Q
 
+def format_float_to_3_digits(float_input):
+    # Extract the integer part and the decimal part
+    if float_input < 0:
+        float_input = - float_input
+    tenths = int(float_input * 10)
+    # Format the output string with leading zeros if necessary
+    return f"{tenths:03d}"
+
 def define_message():
+    from datetime import datetime
+    print(header_data)
+    print(table_data)
     RPLat = header_data['RPLat'][0]
     RPLon = header_data['RPLon'][0]
+    date = header_data['ReleaseDate'][0]
+    time = header_data['ReleaseTime'][0]
     Q = determine_Q(RPLat, RPLon)
     group_1 = f'METCM{Q}'
-    group_2 = str((float(RPLon) * 10))[0:3].rjust(3, '0')
-    print(group_1)
-    print(group_2)
+    group_2 = format_float_to_3_digits(float(RPLat)) + format_float_to_3_digits(float(RPLon))
+    parsed_date = datetime.strptime(date, '%d/%m/%y')
+    day = f"{parsed_date.day:02d}"
+    parsed_time = datetime.strptime(time, '%H:%M:%S')
+    minute = parsed_time.minute
+    minute_decimal = minute / 60
+    fraction = int((minute_decimal - int(minute_decimal)) * 10)
+    hour = parsed_time.hour
+    group_3 = str(day) + f"{hour:02d}" + f"{fraction}0"
+    height = int(header_data['RPHeightMSL'][0] / 10)
+    pressure = int(header_data['GLPressure'][0]) % 1000
+    group_4 = f"{height:03d}" + f"{pressure:03d}"
+    message_header = str(group_1) + ' ' + str(group_2) + ' ' + str(group_3) + ' ' + str(group_4)
+    message_body_lines = []
+    data_frame = pd.DataFrame(table_data)
+    zone_number_code = {
+        (0,1): '00',
+        (1, 200): '01',
+        (200, 500): '02',
+        (500, 1000): '03',
+        (1000, 1500): '04',
+        (1500, 2000): '05',
+        (2000, 2500): '06',
+        (2500, 3000): '07',
+        (3000, 3500): '08',
+        (3500, 4000): '09',
+        (4000, 4500): '10',
+        (4500, 5000): '11',
+        (5000, 6000): '12',
+        (6000, 7000): '13',
+        (7000, 8000): '14',
+        (8000, 9000): '15',
+        (9000, 10000): '16',
+        (10000, 11000): '17',
+        (11000, 12000): '18',
+        (12000, 13000): '19',
+        (13000, 14000): '20',
+        (14000, 15000): '21',
+        (15000, 16000): '22',
+        (16000, 17000): '23',
+        (17000, 18000): '24',
+        (18000, 19000): '25',
+        (19000, 20000): '26',
+        (20000, 22000): '27',
+        (22000, 24000): '28',
+        (24000, 26000): '29',
+        (26000, 28000): '30',
+        (28000, 30000): '31'
+    }
 
-define_message()
+    target_heights = array([0, 100, 350, 750, 1250, 1750, 2250, 2750, 3250, 3750, 4250, 4750, 5500, 6500, 7500, 8500, 9500,
+         10500, 11500, 12500, 13500, 14500, 15500, 16500, 17500, 18500, 19500, 21000, 23000, 25000,
+         27000, 29000])
+    group_5 = []
+    group_5_1 = []
+    group_5_2 = []
+    group_5_3 = []
+    group_6 = []
+    group_6_1 = []
+    group_6_2 = []
+    altitude = target_heights + table_data['HeightMSL'][0]
+    interpolated_dictionary = interpolate_values(table_data, altitude)
+    for alt in altitude:
+        for (start, end), output in zone_number_code.items():
+            if start <= (alt - altitude[0]) < end:
+                group_5_1.append(output)
 
-'''RPLat = header_data['RPLat'][0]
-RPLon = header_data['RPLon'][0]
+    for i in range(len(group_5_1)):
+        direction = interpolated_dictionary[1][i] * 6400/360
+        group_5_2.append(direction)
+        group_5_3.append(interpolated_dictionary[0][i]*1.94384)
+        text_5 = f"{group_5_1[i]}{int(group_5_2[i]) // 10 % 1000:03d}{int(group_5_3[i]):03d}"
+        group_5.append(text_5)
+        group_6_1.append(interpolated_dictionary[2][i]*10)
+        group_6_2.append(interpolated_dictionary[-1][i])
+        text_6 = f"{int(group_6_1[i]):04d}{int(group_6_2[i]):04d}"
+        group_6.append(text_6)
 
-# Determine the value of Q
-Q = determine_Q(RPLat, RPLon)
+    for i in range(32):
+        message_body_lines.append(f"{group_5[i]} {group_6[i]}")
 
-print("Value of Q:", Q)'''
+    return message_header, message_body_lines
+
+
+def create_message(input_header, input_table, output_directory):
+    global header_data, table_data, output_path
+    try:
+        header_data = input_header
+        table_data = input_table
+        head, body = define_message()
+        with open(output_directory, "w") as f:
+            print(head, file=f)
+            for part in body:
+                print(part, file=f)
+    except FileNotFoundError:
+        pass
+
 
