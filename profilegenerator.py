@@ -16,6 +16,7 @@ input_lat = 0
 input_lon = 0
 input_date = ''
 input_wrf_time = ''
+
 class VirtualSoundingGenMultiGFS:
 
     def __init__(self):
@@ -87,7 +88,10 @@ class VirtualSoundingGenMultiGFS:
         print("<II> Done")
 
     def genProfile(self, wrf_time, wsLat, wsLon, ds):
-        dprofile = ds.interp(valid_time=wrf_time, latitude=wsLat, longitude=wsLon)
+        if len(self.baseInputDir) > 1:
+            dprofile = ds.interp(valid_time=wrf_time, latitude=wsLat, longitude=wsLon)
+        else:
+            dprofile = ds.interp(valid_time=wrf_time, latitude=wsLat, longitude=wsLon, method='nearest')
 
         hght = mpcalc.geopotential_to_height(dprofile.gh.values * units.meter * self.sett_g0)
         p = dprofile.isobaricInhPa
@@ -162,21 +166,14 @@ class VirtualSoundingGenMultiGFS:
         dft = pd.DataFrame(table_data)
 
         aux_date_str = pd.to_datetime(wrf_time.values, utc=True).astimezone(pytz.utc).strftime('%Y%m%d_%H%M%SZ')
-        fileOutput = f"{self.baseOutputDir}_{aux_date_str}.csv"
-
-        Path(os.path.dirname(fileOutput)).mkdir(parents=True, exist_ok=True)
 
         create_METCM.header_data = header_data
         create_METCM.table_data = table_data
 
 
-        dfh.to_csv(path_or_buf=fileOutput, sep='\t', header=False)
-        dft.to_csv(path_or_buf=fileOutput, sep='\t', mode='a', index_label='n')
         dashboard.df = dft
-        print('Virtual Profile written: ' + os.path.basename(fileOutput))
         print(dfh)
         print(dft)
-
 
 
         dashboard.input_header = header_data

@@ -1,3 +1,5 @@
+import geopy
+import requests
 from timezonefinder import TimezoneFinder
 from geopy.geocoders import Nominatim
 import pytz
@@ -10,42 +12,45 @@ coordinates_input = []
 
 def get_utc_time_from_coordinates(coordinates):
     global utc_time_zone, coordinates_input
-    latitude, longitude = coordinates
-    
-    # Reverse geocode to get precise location information
-    geolocator = Nominatim(user_agent="get_utc_time_from_coordinates")
-    location = geolocator.reverse((latitude, longitude), language='en')
-    
-    if location is None:
-        return "Unable to determine location for the given coordinates."
-    
-    # Extract city name or use the fallback if not available
-    city_name = location.raw.get('address', {}).get('city', 'Unknown City')
-    
-    # Find the timezone using the coordinates
-    tf = TimezoneFinder()
-    timezone_str = tf.timezone_at(lat=latitude, lng=longitude)
-    
-    if timezone_str is None:
-        return "Unable to determine timezone for the given coordinates."
-    
-    # Get the current time in the found timezone
-    local_time = datetime.now(pytz.timezone(timezone_str))
-    
-    # Get the UTC offset in hours and minutes
-    utc_offset = local_time.utcoffset().total_seconds() / 3600
-    
-    # Check for daylight saving time and adjust the UTC offset
-    if local_time.dst():
-        utc_offset -= 1
-    zone_list = timezone_str.split('/')
-    zone = zone_list[0]
-    if city_name == 'Unknown City':
-        output = f"{timezone_str} UTC{' + ' if utc_offset >= 0 else ' - '}{abs(int(utc_offset)):02d}:{int((abs(utc_offset) % 1) * 60):02d}"
-    else:
-        output = f"{zone +'/'+city_name} UTC{' + ' if utc_offset >= 0 else ' - '}{abs(int(utc_offset)):02d}:{int((abs(utc_offset) % 1) * 60):02d}"
-    utc_time_zone = output
-    
+    try:
+        latitude, longitude = coordinates
+
+        # Reverse geocode to get precise location information
+        geolocator = Nominatim(user_agent="get_utc_time_from_coordinates")
+        location = geolocator.reverse((latitude, longitude), language='en')
+
+        if location is None:
+            return "Unable to determine location for the given coordinates."
+
+        # Extract city name or use the fallback if not available
+        city_name = location.raw.get('address', {}).get('city', 'Unknown City')
+
+        # Find the timezone using the coordinates
+        tf = TimezoneFinder()
+        timezone_str = tf.timezone_at(lat=latitude, lng=longitude)
+
+        if timezone_str is None:
+            return "Unable to determine timezone for the given coordinates."
+
+        # Get the current time in the found timezone
+        local_time = datetime.now(pytz.timezone(timezone_str))
+
+        # Get the UTC offset in hours and minutes
+        utc_offset = local_time.utcoffset().total_seconds() / 3600
+
+        # Check for daylight saving time and adjust the UTC offset
+        if local_time.dst():
+            utc_offset -= 1
+        zone_list = timezone_str.split('/')
+        zone = zone_list[0]
+        if city_name == 'Unknown City':
+            output = f"{timezone_str} UTC{' + ' if utc_offset >= 0 else ' - '}{abs(int(utc_offset)):02d}:{int((abs(utc_offset) % 1) * 60):02d}"
+        else:
+            output = f"{zone +'/'+city_name} UTC{' + ' if utc_offset >= 0 else ' - '}{abs(int(utc_offset)):02d}:{int((abs(utc_offset) % 1) * 60):02d}"
+        utc_time_zone = output
+
+    except TimeoutError:
+        pass
 
 
 def convert_to_utc_with_offset(input_date_str, offset_str):

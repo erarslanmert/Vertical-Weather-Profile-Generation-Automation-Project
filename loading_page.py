@@ -1,63 +1,86 @@
 import sys
 import threading
-from PyQt6.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel
-from PyQt6.QtCore import Qt, QObject, pyqtSignal
-from PyQt6.QtGui import QMovie
+import time
 
-class Communicate(QObject):
-    close_signal = pyqtSignal()
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtCore import QObject, pyqtSignal
 
-class LoadingDialog(QDialog):
-    def __init__(self):
-        super().__init__()
+class StreamRedirect(QObject):
+    messageWritten = pyqtSignal(str)
 
-        # Set window flags to remove title bar and make the background transparent
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+    def write(self, text):
+        self.messageWritten.emit(str(text))
 
-        layout = QVBoxLayout()
+class Ui_Dialog(object):
+    def setupUi(self, Dialog):
+        Dialog.setObjectName("Dialog")
+        Dialog.resize(829, 593)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("Images/M.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        Dialog.setWindowIcon(icon)
+        Dialog.setToolTipDuration(0)
+        self.label = QtWidgets.QLabel(Dialog)
+        self.label.setGeometry(QtCore.QRect(30, 30, 51, 51))
+        self.label.setScaledContents(True)
+        self.movie = QtGui.QMovie("Images/loading.gif")
+        self.label.setMovie(self.movie)
+        self.movie.start()
+        self.label.setObjectName("label")
+        self.label_2 = QtWidgets.QLabel(Dialog)
+        self.label_2.setGeometry(QtCore.QRect(100, 30, 131, 51))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.label_2.setFont(font)
+        self.label_2.setObjectName("label_2")
+        self.textEdit = QtWidgets.QTextEdit(Dialog)
+        self.textEdit.setGeometry(QtCore.QRect(40, 90, 751, 421))
+        self.textEdit.setFrameShape(QtWidgets.QFrame.Shape.Box)
+        self.textEdit.setObjectName("textEdit")
+        self.textEdit.setReadOnly(True)
+        self.pushButton = QtWidgets.QPushButton(Dialog, clicked = lambda: Dialog.close())
+        self.pushButton.setGeometry(QtCore.QRect(674, 533, 91, 31))
+        self.pushButton.setObjectName("pushButton")
 
-        # Load the loading GIF
-        self.loading_label = QLabel()
-        self.loading_movie = QMovie("Images\loading.gif")  # Replace "loading.gif" with your actual file path
-        self.loading_label.setMovie(self.loading_movie)
-        self.loading_movie.start()
+        self.stdout_redirect = StreamRedirect()
+        self.stderr_redirect = StreamRedirect()
 
-        layout.addWidget(self.loading_label, alignment=Qt.AlignmentFlag.AlignCenter)
-        self.setLayout(layout)
+        sys.stdout = self.stdout_redirect
+        sys.stderr = self.stderr_redirect
 
-        self.communicate = Communicate()
-        self.communicate.close_signal.connect(self.close)
+        self.stdout_redirect.messageWritten.connect(self.append_text)
+        self.stderr_redirect.messageWritten.connect(self.append_text)
 
-    def closeEvent(self, event):
-        self.communicate.close_signal.emit()
+        self.retranslateUi(Dialog)
+        QtCore.QMetaObject.connectSlotsByName(Dialog)
 
-class LoadingThread(threading.Thread):
-    def __init__(self):
-        super().__init__()
-        self.app = None
-        self.loading_dialog = None
-        self.running = True
 
-    def run(self):
-        self.app = QApplication(sys.argv)
-        self.loading_dialog = LoadingDialog()
-        self.loading_dialog.show()
-        self.app.exec()
-        self.running = False
+    def append_text(self, text):
+        self.textEdit.append(text.strip())
 
-def start_loading_dialog_thread():
-    global loading_thread
-    loading_thread = LoadingThread()
-    loading_thread.start()
+    def retranslateUi(self, Dialog):
+        _translate = QtCore.QCoreApplication.translate
+        Dialog.setWindowTitle(_translate("Dialog", "Preparing Data Set"))
+        self.label_2.setText(_translate("Dialog", "Loading..."))
+        self.pushButton.setText(_translate("Dialog", "Close"))
 
-def close_loading_dialog():
-    if loading_thread.running:
-        loading_thread.communicate.close_signal.emit()
-        loading_thread.join()
 
-# Example usage:
-# In your main application script:
-# loading_page.start_loading_dialog_thread()
-# profilegenerator.start_reading_gfs()
-# loading_page.close_loading_dialog()
+def open_loading():
+    Dialog = QtWidgets.QDialog()
+    Dialog.setStyle(QtWidgets.QStyleFactory.create("Windows Vista"))
+    ui = Ui_Dialog()
+    ui.setupUi(Dialog)
+    Dialog.show()
+    Dialog.exec()
+
+
+
+
+
+
+
+
+
+
+
+
+

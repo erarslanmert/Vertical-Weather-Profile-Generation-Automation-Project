@@ -6,6 +6,7 @@ from scipy.interpolate import interp1d
 header_data = {}
 table_data = {}
 output_path = ""
+acceptance_flag = 0
 
 def interpolate_values(input_dict, target_heights):
     # Extract the original heights and Pc values from the input dictionary
@@ -77,9 +78,6 @@ def define_message():
     group_3 = str(day) + f"{hour:02d}" + f"{fraction}0"
     height = int(header_data['RPHeightMSL'][0] / 10)
     pressure = int(header_data['GLPressure'][0]) % 1000
-    group_4 = f"{height:03d}" + f"{pressure:03d}"
-    message_header = str(group_1) + ' ' + str(group_2) + ' ' + str(group_3) + ' ' + str(group_4)
-    message_body_lines = []
     data_frame = pd.DataFrame(table_data)
     zone_number_code = {
         (0,1): '00',
@@ -96,8 +94,6 @@ def define_message():
         (4500, 5000): '11',
         (5000, 6000): '12',
         (6000, 7000): '13',
-        (7000, 8000): '14',
-        (8000, 9000): '15',
         (9000, 10000): '16',
         (10000, 11000): '17',
         (11000, 12000): '18',
@@ -126,7 +122,11 @@ def define_message():
     group_6 = []
     group_6_1 = []
     group_6_2 = []
-    altitude = target_heights + table_data['HeightMSL'][0]
+    if height < 0:
+        altitude = target_heights
+    else:
+        altitude = target_heights + table_data['HeightMSL'][0]
+
     interpolated_dictionary = interpolate_values(table_data, altitude)
     for alt in altitude:
         for (start, end), output in zone_number_code.items():
@@ -144,23 +144,31 @@ def define_message():
         text_6 = f"{int(group_6_1[i]):04d}{int(group_6_2[i]):04d}"
         group_6.append(text_6)
 
-    for i in range(32):
-        message_body_lines.append(f"{group_5[i]} {group_6[i]}")
+    group_4 = f"{height:03d}" + f"{pressure:03d}"
+    message_header = str(group_1) + ' ' + str(group_2) + ' ' + str(group_3) + ' ' + str(group_4)
+    message_body_lines = []
 
+    for i in range(len(group_5)):
+        message_body_lines.append(f"{group_5[i]} {group_6[i]}")
     return message_header, message_body_lines
 
 
 def create_message(input_header, input_table, output_directory):
     global header_data, table_data, output_path
-    try:
-        header_data = input_header
-        table_data = input_table
-        head, body = define_message()
-        with open(output_directory, "w") as f:
-            print(head, file=f)
-            for part in body:
-                print(part, file=f)
-    except FileNotFoundError:
+    if acceptance_flag == 0:
+        try:
+            header_data = input_header
+            table_data = input_table
+            head, body = define_message()
+            with open(output_directory, "w") as f:
+                print(head, file=f)
+                for part in body:
+                    print(part, file=f)
+        except FileNotFoundError:
+            pass
+    else:
+        acceptance_flag == 0
         pass
+
 
 

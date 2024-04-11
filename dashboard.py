@@ -36,11 +36,15 @@ class FileManagerDialog(QDialog):
             dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)  # Only show directories
             dialog.setNameFilter("Text files (*.txt)")  # Set filter to show only txt files
             if dialog.exec() == QDialog.DialogCode.Accepted:
+                create_METCM.acceptance_flag = 0
                 selected_directory = dialog.selectedFiles()[0]
                 file_name = dialog.selectedNameFilter()  # Get the specified file name
                 if selected_directory:
                     selected_file = selected_directory + '/' + file_name
-            output_directory = selected_file.replace('/Text files (*.txt)', '')
+                output_directory = selected_file.replace('/Text files (*.txt)', '')
+            else:
+                create_METCM.acceptance_flag = 1
+
         except UnboundLocalError:
             pass
 
