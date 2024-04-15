@@ -2,13 +2,15 @@ import os
 import re
 import socket
 import threading
+
+import mgrs
 import utm
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtWidgets import QMainWindow, QApplication, QDateTimeEdit, QDialog, QFileDialog, QWidget, QVBoxLayout, \
     QLabel, QPushButton, QLineEdit, QMessageBox, QTextEdit, QScrollArea, QGridLayout, QStyledItemDelegate
 from PyQt6.QtGui import QDoubleValidator, QPainter, QRegion, QPainterPath, QPixmap, QColor, QIcon, QMovie, QFont
 from PyQt6.QtCore import QDateTime, Qt, QLocale, QThread, pyqtSignal, QTimer, QPropertyAnimation, QPoint, QRect, \
-    QEasingCurve, QProcess
+    QEasingCurve, QProcess, pyqtSlot, QObject
 import sys
 import loading_page
 import notification_popups
@@ -28,6 +30,9 @@ input_validator_1 = False
 input_validator_2 = False
 input_validator_3 = False
 input_validator_4 = False
+input_validator_5 = False
+latlon = ()
+
 
 class WorkerThread(QThread):
     text_changed = pyqtSignal(str)
@@ -41,7 +46,7 @@ class WorkerThread(QThread):
         while True:
             # Simulating some heavy computation or processing
             # Replace this with your actual computation or processing
-            time.sleep(0.1)
+            time.sleep(0.01)
 
             try:
                 download_time_interval = []
@@ -204,6 +209,27 @@ class Ui_MainWindow(object):
         self.spinBox.setGeometry(QtCore.QRect(81, 240, 35, 21))
         self.spinBox.setObjectName("spinBox")
 
+        self.spinBox.setRange(1,60)
+        self.spinBox.setValue(30)
+        self.comboBox_2.addItems(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'])
+        self.comboBox_2.setCurrentIndex(0)
+
+        font_2 = QFont()
+        font_2.setPointSize(8)
+
+        self.spinBox.setFont(font_2)
+        self.comboBox_2.setFont(font_2)
+        self.lineEdit.setFont(font_2)
+        self.lineEdit_2.setFont(font_2)
+        self.lineEdit_3.setFont(font_2)
+        self.lineEdit_4.setFont(font_2)
+        self.lineEdit_5.setFont(font_2)
+
+        self.lineEdit.setText('0')
+        self.lineEdit_2.setText('0')
+
+
+
         self.lineEdit_3.setDisabled(True)
         self.lineEdit_4.setDisabled(True)
         self.lineEdit_3.hide()
@@ -230,14 +256,14 @@ class Ui_MainWindow(object):
         self.buttonBox.setGeometry(QtCore.QRect(50, 340, 260, 23))
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.StandardButton.Cancel|QtWidgets.QDialogButtonBox.StandardButton.Ok)
         self.buttonBox.setObjectName("buttonBox")
-        browse_button = self.buttonBox.addButton("Browse...", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+        self.browse_button = self.buttonBox.addButton("Browse...", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
 
 
         # Change the text of the "Ok" button to "Download"
         self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setText("Download")
 
         self.label = QtWidgets.QLabel(parent=self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(30, 300, 301, 20))
+        self.label.setGeometry(QtCore.QRect(35, 300, 301, 20))
         self.label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.label.setObjectName("label")
 
@@ -259,15 +285,20 @@ class Ui_MainWindow(object):
         self.buttonBox.accepted.connect(self.okay_clicked)
         self.buttonBox.rejected.connect(loading_page.open_loading)
 
-        self.lineEdit.setText('51.987327')
-        self.lineEdit_2.setText('5.933481')
-
         self.lineEdit.textChanged.connect(self.update_thread_texts)
         self.lineEdit_2.textChanged.connect(self.update_thread_texts)
         self.lineEdit.textChanged.connect(self.validate_latitude)
         self.lineEdit_2.textChanged.connect(self.validate_longitude)
         self.lineEdit_3.textChanged.connect(self.validate_mgrs)
         self.lineEdit_4.textChanged.connect(self.validate_utm)
+        self.lineEdit_5.textChanged.connect(self.validate_utm)
+        self.spinBox.textChanged.connect(self.validate_utm)
+        self.comboBox_2.currentTextChanged.connect(self.validate_utm)
+        self.lineEdit_4.textChanged.connect(self.update_thread_texts)
+        self.lineEdit_5.textChanged.connect(self.update_thread_texts)
+        self.spinBox.textChanged.connect(self.update_thread_texts)
+        self.comboBox_2.currentTextChanged.connect(self.update_thread_texts)
+
 
         self.worker_thread = WorkerThread()
         self.worker_thread.text_changed.connect(self.update_label)
@@ -276,21 +307,24 @@ class Ui_MainWindow(object):
         self.t1 = threading.Thread(target=self.is_internet_available)
         self.t1.start()
 
-        browse_button.clicked.connect(lambda: self.browse_files())
+        self.browse_button.clicked.connect(lambda: self.browse_files())
         self.comboBox.currentIndexChanged.connect(self.combo_changed)
+
 
         self.comboBox.setCurrentIndex(0)
 
         self.t2 = threading.Thread(target=self.check_inputs)
         self.t2.start()
 
+
     def check_inputs(self):
         while True:
-            if input_validator_1 == 1 and input_validator_2 == 1 or input_validator_3 == 1 or input_validator_4 == 1:
+            if input_validator_1 == 1 and input_validator_2 == 1:
                 self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(True)
+                self.browse_button.setEnabled(True)
             else:
                 self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setDisabled(True)
-
+                self.browse_button.setDisabled(True)
 
     def combo_changed(self):
         if self.comboBox.currentIndex() == 1:
@@ -315,7 +349,7 @@ class Ui_MainWindow(object):
             self.lineEdit_3.clear()
             self.lineEdit_4.clear()
             self.lineEdit_5.clear()
-            self.label_4.setText('MGRS Coordinate')
+            self.label_4.setText('MGRS - 5 Digid Precision')
             self.label_5.clear()
         elif self.comboBox.currentIndex() == 2:
             self.lineEdit.hide()
@@ -342,6 +376,7 @@ class Ui_MainWindow(object):
             self.label_5.clear()
         else:
             self.lineEdit.show()
+            self.lineEdit_2.show()
             self.lineEdit_4.hide()
             self.lineEdit_5.hide()
             self.lineEdit_5.clear()
@@ -364,30 +399,64 @@ class Ui_MainWindow(object):
             self.label_4.setText('Latitude')
             self.label_5.setText('Longitude')
 
+        self.update_thread_texts()
+
 
     def validate_mgrs(self):
-        global input_validator_3
+        global input_validator_3, latlon
         text = self.lineEdit_3.text()
         # Regular expression to validate MGRS format
-        mgrs_pattern = re.compile(r"^[0-9]{1,2}[C-X][A-Z]{2}[0-9]+\s*$")
+        mgrs_pattern = re.compile("^[0-9]{1,2}[C-X][A-Z]{2}[0-9]{5}[0-9]{5}$")
         if mgrs_pattern.match(text):
-            self.lineEdit_3setStyleSheet("color: black;")  # Valid input, set color to black
+            self.lineEdit_3.setStyleSheet("color: black;")  # Valid input, set color to black
             input_validator_3 = 1
+            latlon = self.mgrs_to_latlon(text)
+            self.lineEdit.setText(f"{latlon[0]:.6f}")
+            self.lineEdit_2.setText(f"{latlon[-1]:.6f}")
+            print(self.lineEdit.text())
+            print(self.lineEdit_2.text())
         else:
             self.lineEdit_3.setStyleSheet("color: red;")  # Invalid input, set color to red
             input_validator_3 = 0
+        self.update_thread_texts()
 
     def validate_utm(self):
-        global input_validator_4
-        text = self.lineEdit_4.text()
+        global input_validator_4, input_validator_5, latlon
         # Regular expression to validate UTM format
-        utm_pattern = re.compile(r"^[0-9]+ [0-9]+ [0-9]+ [NS]$")
-        if utm_pattern.match(text):
-            self.lineEdit_4.setStyleSheet("color: black;")
-            input_validator_4 = 1
-        else:
-            self.lineEdit_4.setStyleSheet("color: red;")
-            input_validator_4 = 0
+        zone = self.spinBox.value()
+        band = self.comboBox_2.currentText()
+        easting = 0
+        northing = 0
+        try:
+            easting = int(self.lineEdit_4.text())
+            northing = int(self.lineEdit_5.text())
+            utm_pattern = re.compile(r"^\d{6,10}$")
+        except ValueError:
+            pass
+
+        try:
+            if utm_pattern.match(str(easting)) and utm_pattern.match(str(northing)):
+                self.lineEdit_4.setStyleSheet("color: black;")
+                self.lineEdit_5.setStyleSheet("color: black;")
+                input_validator_4 = 1
+                input_validator_5 = 1
+                latlon = self.utm_to_latlon(zone, band, easting, northing)
+                if latlon is not None:  # Check if latlong is not None
+                    self.lineEdit.setText(f"{latlon[0]:.6f}")
+                    self.lineEdit_2.setText(f"{latlon[-1]:.6f}")
+                    print(self.lineEdit.text())
+                    print(self.lineEdit_2.text())
+                else:
+                    print("Failed to convert UTM to latlon")
+            else:
+                self.lineEdit_4.setStyleSheet("color: red;")
+                self.lineEdit_5.setStyleSheet("color: red;")
+                input_validator_4 = 0
+                input_validator_5 = 0
+        except:
+            pass
+        self.update_thread_texts()
+
 
     def validate_latitude(self):
         global input_validator_1
@@ -421,19 +490,22 @@ class Ui_MainWindow(object):
             self.lineEdit_2.setStyleSheet("color: red;")
             input_validator_2 = 0
 
-    def mgrs_to_latlon(self,mgrs_coordinate):
+    def mgrs_to_latlon(self,mgrs_coord):
         try:
-            latlon = utm.to_latlon(*utm.from_mgrs(mgrs_coordinate))
-            return [str(latlon[0]), str(latlon[1])]
-        except Exception as e:
-            return [f"Error: {e}"]
+            m = mgrs.MGRS()
+            d = m.toLatLon(mgrs_coord)
+            # Convert MGRS coordinate string to latitude and longitude
+            return d
+        except:
+            pass
 
-    def utm_to_latlon(self,zone, easting, northing, northern_hemisphere=True):
+
+    def utm_to_latlon(self, zone, band, easting, northing):
         try:
-            latlon = utm.to_latlon(easting, northing, zone, northern_hemisphere=northern_hemisphere)
-            return [str(latlon[0]), str(latlon[1])]
-        except Exception as e:
-            return [f"Error: {e}"]
+            latitude, longitude = utm.to_latlon(easting, northing, zone, band)
+            return latitude, longitude
+        except:
+            pass
 
     def is_internet_available(self):
         while True:
@@ -449,8 +521,7 @@ class Ui_MainWindow(object):
                 self.t2.join()
                 self.t1.join()
                 sys.exit()
-                break
-            time.sleep(5)
+            time.sleep(10)
 
 
     def update_thread_texts(self):
@@ -497,8 +568,7 @@ class Ui_MainWindow(object):
             profilegenerator.input_lon = float(selected_location[-1])
             profilegenerator.input_date = string_start_date
             profilegenerator.input_wrf_time = str(start_datetime.time())
-            profilegenerator.start_reading_gfs()
-            dashboard.open_dialog()
+            loading_page.open_loading()
         else:
             pass
 
@@ -535,8 +605,8 @@ class Ui_MainWindow(object):
             profilegenerator.input_lon = float(selected_location[-1])
             profilegenerator.input_date = string_start_date
             profilegenerator.input_wrf_time = str(start_datetime.time())
-            profilegenerator.start_reading_gfs()
-            dashboard.open_dialog()
+            loading_page.open_loading()
+
         except OSError:
             print('Browsing cancelled.')
             pass
@@ -581,6 +651,7 @@ class Ui_MainWindow(object):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     MainWindow = QMainWindow()
+    MainWindow.setStyle(QtWidgets.QStyleFactory.create("Windows Vista"))
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
     MainWindow.show()

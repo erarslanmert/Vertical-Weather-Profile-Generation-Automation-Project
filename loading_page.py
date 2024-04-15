@@ -5,6 +5,10 @@ import time
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import QObject, pyqtSignal
 
+import dashboard
+import profilegenerator
+
+
 class StreamRedirect(QObject):
     messageWritten = pyqtSignal(str)
 
@@ -12,6 +16,9 @@ class StreamRedirect(QObject):
         self.messageWritten.emit(str(text))
 
 class Ui_Dialog(object):
+
+    def __init__(self):
+        self.dialog = None
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.resize(829, 593)
@@ -40,6 +47,7 @@ class Ui_Dialog(object):
         self.pushButton = QtWidgets.QPushButton(Dialog, clicked = lambda: Dialog.close())
         self.pushButton.setGeometry(QtCore.QRect(674, 533, 91, 31))
         self.pushButton.setObjectName("pushButton")
+        self.pushButton.setDisabled(True)
 
         self.stdout_redirect = StreamRedirect()
         self.stderr_redirect = StreamRedirect()
@@ -53,9 +61,21 @@ class Ui_Dialog(object):
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
+        self.t3 = threading.Thread(target=profilegenerator.start_reading_gfs)
+        self.t3.start()
+
 
     def append_text(self, text):
         self.textEdit.append(text.strip())
+        if "<II> Done" in text:
+            # Close the dialog
+            self.pushButton.setEnabled(True)
+            print('Please check dashboard interface to generate MET messages!')
+            self.movie.stop()
+            self.label.hide()
+            self.label_2.setText('Ready!')
+            dashboard.open_dialog()
+
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate

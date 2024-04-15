@@ -1,4 +1,5 @@
 import os
+import threading
 from pathlib import Path
 from multiprocessing.pool import Pool
 from functools import partial
@@ -16,6 +17,7 @@ input_lat = 0
 input_lon = 0
 input_date = ''
 input_wrf_time = ''
+thread_flag = 0
 
 class VirtualSoundingGenMultiGFS:
 
@@ -49,7 +51,7 @@ class VirtualSoundingGenMultiGFS:
         return dict_DSInfo
 
     def init(self, dsInfoKey):
-        global dsm
+        global dsm, thread_flag
         dsInfoDict = self.getDSInfo()
         dsInfo = dsInfoDict[dsInfoKey]
 
@@ -86,6 +88,7 @@ class VirtualSoundingGenMultiGFS:
                 self.genProfile(wrf_time, wsLat, wsLon, dsm)
 
         print("<II> Done")
+        thread_flag = 1
 
     def genProfile(self, wrf_time, wsLat, wsLon, ds):
         if len(self.baseInputDir) > 1:
@@ -180,6 +183,9 @@ class VirtualSoundingGenMultiGFS:
         dashboard.input_table = table_data
 
 
+
+
 def start_reading_gfs():
     vs_gen = VirtualSoundingGenMultiGFS()
     vs_gen.init('file_key')
+

@@ -144,7 +144,11 @@ def define_message():
         text_6 = f"{int(group_6_1[i]):04d}{int(group_6_2[i]):04d}"
         group_6.append(text_6)
 
-    group_4 = f"{height:03d}" + f"{pressure:03d}"
+    if int(interpolated_dictionary[-1][0]) >= 1000:
+        formatted_string = f"{int(interpolated_dictionary[-1][0]):03d}"
+        group_4 = f"{int(altitude[0]):03d}" + formatted_string[-3:]
+    else:
+        group_4 = f"{int(altitude[0]):03d}" + f"{int(interpolated_dictionary[-1][0]):03d}"
     message_header = str(group_1) + ' ' + str(group_2) + ' ' + str(group_3) + ' ' + str(group_4)
     message_body_lines = []
 

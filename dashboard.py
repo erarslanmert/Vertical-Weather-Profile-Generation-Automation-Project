@@ -99,6 +99,7 @@ class Ui_Dialog(object):
         cancel_button = self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
         cancel_button.setMinimumSize(150, 50)  # Adjust the size as needed
         cancel_button.setMaximumSize(150, 50)  # Adjust the size as needed
+        cancel_button.clicked.connect(Dialog.close)
 
         # Add navigation buttons
         self.prev_button = QPushButton("<", parent=Dialog)
