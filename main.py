@@ -684,6 +684,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     MainWindow = MainWindow()
-    MainWindow.setStyle(QtWidgets.QStyleFactory.create("Fusion"))
+    MainWindow.setStyle(QtWidgets.QStyleFactory.create("WindowsVista"))
     MainWindow.show()
     app.exec()
