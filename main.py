@@ -2,22 +2,32 @@ import os
 import re
 import socket
 import threading
-
 import mgrs
 import utm
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QApplication, QDateTimeEdit, QDialog, QFileDialog, QWidget, QVBoxLayout, \
-    QLabel, QPushButton, QLineEdit, QMessageBox, QTextEdit, QScrollArea, QGridLayout, QStyledItemDelegate
-from PyQt6.QtGui import QDoubleValidator, QPainter, QRegion, QPainterPath, QPixmap, QColor, QIcon, QMovie, QFont
-from PyQt6.QtCore import QDateTime, Qt, QLocale, QThread, pyqtSignal, QTimer, QPropertyAnimation, QPoint, QRect, \
-    QEasingCurve, QProcess, pyqtSlot, QObject
+from PyQt6.QtWidgets import QMainWindow, QApplication, QDateTimeEdit, QDialog, QFileDialog
+from PyQt6.QtGui import QDoubleValidator, QFont, QCloseEvent
+from PyQt6.QtCore import QDateTime, Qt, QLocale, QThread, pyqtSignal
 import sys
 import loading_page
-import notification_popups
 import time_zone_finder, createURL, progressbardownload
 from datetime import datetime, timedelta
 import time
-import profilegenerator, dashboard
+import profilegenerator
+
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS2
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+
+
 
 selected_time_zone = ''
 selected_time_interval = []
@@ -32,6 +42,8 @@ input_validator_3 = False
 input_validator_4 = False
 input_validator_5 = False
 latlon = ()
+thread_flag_1 = 0
+
 
 
 class WorkerThread(QThread):
@@ -103,6 +115,7 @@ class FileManagerDialog(QDialog):
 
 
 class Ui_MainWindow(object):
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(366, 410)
@@ -282,8 +295,27 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
+
+
+    def retranslateUi(self, MainWindow):
+        _translate = QtCore.QCoreApplication.translate
+        MainWindow.setWindowTitle(_translate("MainWindow", "METCM Generator"))
+        self.label.setText(_translate("MainWindow", "Time Zone:"))
+        self.label_2.setText(_translate("MainWindow", "Operation Start Time"))
+        self.label_3.setText(_translate("MainWindow", "Operation End Time"))
+        self.label_4.setText(_translate("MainWindow", "Latitude"))
+        self.label_5.setText(_translate("MainWindow", "Longitude"))
+        self.label_6.setText(_translate("MainWindow", "|Zone|"))
+        self.label_7.setText(_translate("MainWindow", "|Band|"))
+        self.label_8.setText(_translate("MainWindow", "|Easting|"))
+        self.label_9.setText(_translate("MainWindow", "|Northing|"))
+
+class MainWindow(QMainWindow, Ui_MainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
         self.buttonBox.accepted.connect(self.okay_clicked)
-        self.buttonBox.rejected.connect(loading_page.open_loading)
 
         self.lineEdit.textChanged.connect(self.update_thread_texts)
         self.lineEdit_2.textChanged.connect(self.update_thread_texts)
@@ -299,7 +331,6 @@ class Ui_MainWindow(object):
         self.spinBox.textChanged.connect(self.update_thread_texts)
         self.comboBox_2.currentTextChanged.connect(self.update_thread_texts)
 
-
         self.worker_thread = WorkerThread()
         self.worker_thread.text_changed.connect(self.update_label)
         self.worker_thread.start()
@@ -310,21 +341,43 @@ class Ui_MainWindow(object):
         self.browse_button.clicked.connect(lambda: self.browse_files())
         self.comboBox.currentIndexChanged.connect(self.combo_changed)
 
-
         self.comboBox.setCurrentIndex(0)
 
         self.t2 = threading.Thread(target=self.check_inputs)
         self.t2.start()
 
+        def close_window():
+            MainWindow.close()
+            self.close_chain()
+
+        self.buttonBox.rejected.connect(close_window)
+
+    def closeEvent(self, event):
+        global thread_flag_1
+        thread_flag_1 = 1
+        print('Closed')
+        self.t1.join()
+        self.t2.join()
+        event.accept()
+
+    def close_chain(self):
+        global thread_flag_1
+        thread_flag_1 = 1
+        print('Closed')
+        self.t1.join()
+        self.t2.join()
 
     def check_inputs(self):
         while True:
-            if input_validator_1 == 1 and input_validator_2 == 1:
-                self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(True)
-                self.browse_button.setEnabled(True)
+            if thread_flag_1 == 1:
+                break
             else:
-                self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setDisabled(True)
-                self.browse_button.setDisabled(True)
+                if input_validator_1 == 1 and input_validator_2 == 1:
+                    self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(True)
+                    self.browse_button.setEnabled(True)
+                else:
+                    self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setDisabled(True)
+                    self.browse_button.setDisabled(True)
 
     def combo_changed(self):
         if self.comboBox.currentIndex() == 1:
@@ -401,7 +454,6 @@ class Ui_MainWindow(object):
 
         self.update_thread_texts()
 
-
     def validate_mgrs(self):
         global input_validator_3, latlon
         text = self.lineEdit_3.text()
@@ -457,7 +509,6 @@ class Ui_MainWindow(object):
             pass
         self.update_thread_texts()
 
-
     def validate_latitude(self):
         global input_validator_1
         text = self.lineEdit.text()
@@ -490,7 +541,7 @@ class Ui_MainWindow(object):
             self.lineEdit_2.setStyleSheet("color: red;")
             input_validator_2 = 0
 
-    def mgrs_to_latlon(self,mgrs_coord):
+    def mgrs_to_latlon(self, mgrs_coord):
         try:
             m = mgrs.MGRS()
             d = m.toLatLon(mgrs_coord)
@@ -498,7 +549,6 @@ class Ui_MainWindow(object):
             return d
         except:
             pass
-
 
     def utm_to_latlon(self, zone, band, easting, northing):
         try:
@@ -509,20 +559,20 @@ class Ui_MainWindow(object):
 
     def is_internet_available(self):
         while True:
-            try:
-                # Attempt to connect to a well-known website
-                socket.create_connection(("www.google.com", 80))
-                self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(True)
-                print('<Online>')
-            except OSError:
-                self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setDisabled(True)
-                print('<Offline>')
-            if not MainWindow.isVisible():
-                self.t2.join()
-                self.t1.join()
-                sys.exit()
-            time.sleep(10)
+            if thread_flag_1 == 1:
+                break
 
+            else:
+                try:
+                    # Attempt to connect to a well-known website
+                    socket.create_connection(("www.google.com", 80))
+                    self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(True)
+                    print('<Online>')
+
+                except OSError:
+                    self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setDisabled(True)
+                    print('<Offline>')
+                time.sleep(10)
 
     def update_thread_texts(self):
         text1 = self.lineEdit.text()
@@ -553,7 +603,7 @@ class Ui_MainWindow(object):
         utc_end_time = time_zone_finder.convert_to_utc_with_offset(selected_time_interval[-1], offset_involved)
         download_time_interval.append(utc_start_time)
         download_time_interval.append(utc_end_time)
-        date_interval_list = self.create_date_list(utc_start_time,utc_end_time)
+        date_interval_list = self.create_date_list(utc_start_time, utc_end_time)
         for file_date in date_interval_list:
             hour_url = createURL.create_url(file_date)
             progressbardownload.set_url.append(hour_url)
@@ -571,8 +621,6 @@ class Ui_MainWindow(object):
             loading_page.open_loading()
         else:
             pass
-
-
 
     def browse_files(self):
         global browsed_files
@@ -611,8 +659,6 @@ class Ui_MainWindow(object):
             print('Browsing cancelled.')
             pass
 
-
-
     def create_date_list(self, start_date_str, end_date_str):
         date_format = "%d/%m/%y %H:%M:%S"
 
@@ -635,24 +681,9 @@ class Ui_MainWindow(object):
         return date_list
 
 
-    def retranslateUi(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "METCM Generator"))
-        self.label.setText(_translate("MainWindow", "Time Zone:"))
-        self.label_2.setText(_translate("MainWindow", "Operation Start Time"))
-        self.label_3.setText(_translate("MainWindow", "Operation End Time"))
-        self.label_4.setText(_translate("MainWindow", "Latitude"))
-        self.label_5.setText(_translate("MainWindow", "Longitude"))
-        self.label_6.setText(_translate("MainWindow", "|Zone|"))
-        self.label_7.setText(_translate("MainWindow", "|Band|"))
-        self.label_8.setText(_translate("MainWindow", "|Easting|"))
-        self.label_9.setText(_translate("MainWindow", "|Northing|"))
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    MainWindow = QMainWindow()
-    MainWindow.setStyle(QtWidgets.QStyleFactory.create("Windows Vista"))
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
+    MainWindow = MainWindow()
+    MainWindow.setStyle(QtWidgets.QStyleFactory.create("Fusion"))
     MainWindow.show()
     app.exec()

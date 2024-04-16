@@ -1,5 +1,3 @@
-import geopy
-import requests
 from timezonefinder import TimezoneFinder
 from geopy.geocoders import Nominatim
 import pytz

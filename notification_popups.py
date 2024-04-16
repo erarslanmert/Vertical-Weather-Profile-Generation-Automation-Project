@@ -1,8 +1,6 @@
-import sys
 import time
-
-from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout
-from PyQt6.QtGui import QPixmap, QPainterPath, QColor, QRegion
+from PyQt6.QtWidgets import QWidget, QLabel, QVBoxLayout
+from PyQt6.QtGui import QPixmap, QColor
 from PyQt6.QtCore import Qt, QTimer
 
 

@@ -1,7 +1,6 @@
-import sys
 import requests
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton, QProgressBar, QLabel, QFileDialog, \
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QProgressBar, QLabel, QFileDialog, \
     QMessageBox
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6 import QtGui
@@ -54,7 +53,7 @@ class DownloadThread(QThread):
         except requests.exceptions.ChunkedEncodingError:
             error_box = QMessageBox()
             error_box.setIcon(QMessageBox.Icon.Critical)
-            error_box.setWindowIcon(QIcon("Images\warning.png"))
+            error_box.setWindowIcon(QIcon("Images/warning.png"))
             error_box.setWindowTitle("Error")
             error_box.setText("An error occurred:")
             error_box.setInformativeText('Internet connection is lost. Please check your connection and try again. In order to avoid incomplete or broken files, please check out the partially donwloaded files in the selected directory.')
@@ -73,7 +72,7 @@ class ProgressBarWindow(QDialog):
         super().__init__()
         self.setWindowTitle("File Download Progress")
         self.setGeometry(200, 200, 800, 200)
-        self.setWindowIcon(QtGui.QIcon("Images\M.png"))
+        self.setWindowIcon(QtGui.QIcon("Images/M.png"))
 
         self.layout = QVBoxLayout(self)
 
@@ -117,7 +116,7 @@ class ProgressBarWindow(QDialog):
             msg.setIcon(QMessageBox.Icon.Warning)
             msg.setText("You are interrupting the download process. This may cause incomplete or broken files in your stated directory. Please check for file compatibility in case you continue to analysis. Are you sure to interrupt download process?")
             msg.setWindowTitle("Warning")
-            msg.setWindowIcon(QIcon("Images\warning.png"))
+            msg.setWindowIcon(QIcon("Images/warning.png"))
             # Add buttons to the message box
             msg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
 

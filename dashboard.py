@@ -7,9 +7,7 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QStackedWidget, QWidget, QTableWidget, QFrame, QPushButton, \
-    QSizePolicy, QLabel, QSpacerItem, QHeaderView, QDialog, QFileDialog
+from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QStackedWidget, QWidget, QTableWidget, QFrame, QPushButton,QHeaderView, QDialog, QFileDialog
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.gridspec as gridspec
