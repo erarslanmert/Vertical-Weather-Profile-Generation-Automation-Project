@@ -5,6 +5,8 @@ import metpy.calc as mpcalc
 from metpy.units import units
 import pandas as pd
 import pytz
+
+import create_METTA
 import dashboard, create_METCM
 
 
@@ -171,19 +173,23 @@ class VirtualSoundingGenMultiGFS:
         create_METCM.header_data = header_data
         create_METCM.table_data = table_data
 
+        create_METTA.header_data = header_data
+        create_METTA.table_data = table_data
+
+        print(f'HEADER DATA\n{header_data}')
+        print(f'TABLE DATA\n{table_data}')
 
         dashboard.df = dft
         print(dfh)
         print(dft)
-
-
+        dashboard.file_list = input_dir
+        dashboard.input_time.append(header_data['ReleaseTime'][0])
         dashboard.input_header = header_data
         dashboard.input_table = table_data
 
-
-
-
 def start_reading_gfs():
-    vs_gen = VirtualSoundingGenMultiGFS()
-    vs_gen.init('file_key')
-
+    try:
+        vs_gen = VirtualSoundingGenMultiGFS()
+        vs_gen.init('file_key')
+    except Exception as e:
+        print("An error occurred:", e)

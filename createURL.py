@@ -5,10 +5,12 @@ final_url = ''
 tXXz = 0
 fYYY = 0
 url_date = ''
+main_base = 'https://nomads.ncep.noaa.gov'
+
 
 def create_url(test_date_str):
-    global final_url, tXXz, fYYY, url_date
-    base_url = 'https://ftpprd.ncep.noaa.gov/data/nccf/com/gfs/prod'
+    global final_url, tXXz, fYYY, url_date, main_base
+    base_url = f'{main_base}/pub/data/nccf/com/gfs/prod'
     date_format = "%d/%m/%y %H:%M:%S"
     download_date = datetime.utcnow().replace(tzinfo=None)  # Convert actual_date to naive datetime
 
@@ -59,7 +61,7 @@ def create_url(test_date_str):
     
     url_date_part = f"{calculation_date.year}{calculation_date.month:02d}{calculation_date.day:02d}"
 
-    final_url = f"https://ftpprd.ncep.noaa.gov/data/nccf/com/gfs/prod/gfs.{url_date_part}/{tXXz}/atmos/gfs.t{tXXz}z.pgrb2.0p25.f{fYYY:03d}"
+    final_url = f"https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/gfs.{url_date_part}/{tXXz}/atmos/gfs.t{tXXz}z.pgrb2.0p25.f{fYYY:03d}"
 
     return final_url
 

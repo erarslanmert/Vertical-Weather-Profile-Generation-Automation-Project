@@ -5,8 +5,8 @@ import threading
 import mgrs
 import utm
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QApplication, QDateTimeEdit, QDialog, QFileDialog
-from PyQt6.QtGui import QDoubleValidator, QFont, QCloseEvent
+from PyQt6.QtWidgets import QMainWindow, QApplication, QDateTimeEdit, QDialog, QFileDialog, QMessageBox
+from PyQt6.QtGui import QDoubleValidator, QFont, QCloseEvent, QIcon
 from PyQt6.QtCore import QDateTime, Qt, QLocale, QThread, pyqtSignal
 import sys
 import loading_page
@@ -14,6 +14,7 @@ import time_zone_finder, createURL, progressbardownload
 from datetime import datetime, timedelta
 import time
 import profilegenerator
+import dashboard
 
 
 def resource_path(relative_path):
@@ -43,7 +44,7 @@ input_validator_4 = False
 input_validator_5 = False
 latlon = ()
 thread_flag_1 = 0
-
+source_flag = 0
 
 
 class WorkerThread(QThread):
@@ -118,11 +119,21 @@ class Ui_MainWindow(object):
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(366, 410)
+        MainWindow.resize(366, 430)
         MainWindow.setWindowIcon(QtGui.QIcon("Images/M.png"))
         MainWindow.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, False)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
+
+        self.source_button = QtWidgets.QPushButton("Source", parent=MainWindow)
+        self.source_button.setGeometry(QtCore.QRect(60,380,60,20))
+
+        self.source_name = QtWidgets.QLineEdit(parent=self.centralwidget)
+        self.source_name.setGeometry(QtCore.QRect(121, 380, 202, 20))
+        self.source_name.setObjectName("source_name")
+        self.source_name.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.source_name.setText('https://nomads.ncep.noaa.gov')
+        self.source_name.setDisabled(True)
 
         self.label_2 = QtWidgets.QLabel(parent=self.centralwidget)
         self.label_2.setGeometry(QtCore.QRect(110, 20, 131, 16))
@@ -287,10 +298,13 @@ class Ui_MainWindow(object):
         self.comboBox.addItems(['                      Lat-Long', '              MGRS Coordinates', '                UTM Coordinates'])
 
 
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
+
+
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -299,7 +313,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "METCM Generator"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "MET Message Generator"))
         self.label.setText(_translate("MainWindow", "Time Zone:"))
         self.label_2.setText(_translate("MainWindow", "Operation Start Time"))
         self.label_3.setText(_translate("MainWindow", "Operation End Time"))
@@ -309,6 +323,7 @@ class Ui_MainWindow(object):
         self.label_7.setText(_translate("MainWindow", "|Band|"))
         self.label_8.setText(_translate("MainWindow", "|Easting|"))
         self.label_9.setText(_translate("MainWindow", "|Northing|"))
+
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self):
@@ -346,11 +361,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.t2 = threading.Thread(target=self.check_inputs)
         self.t2.start()
 
+        self.source_button.clicked.connect(self.soruce_change)
+
         def close_window():
             MainWindow.close()
             self.close_chain()
 
         self.buttonBox.rejected.connect(close_window)
+
+    def soruce_change(self):
+        global source_flag
+        if source_flag == 0:
+            self.source_name.setEnabled(True)
+            source_flag = 1
+            self.source_button.setText('Set')
+        else:
+            self.source_name.setDisabled(True)
+            createURL.main_base = self.source_name.text()
+            source_flag = 0
+            self.source_button.setText('Source')
+
 
     def closeEvent(self, event):
         global thread_flag_1
@@ -655,8 +685,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             profilegenerator.input_wrf_time = str(start_datetime.time())
             loading_page.open_loading()
 
+
         except OSError:
             print('Browsing cancelled.')
+            pass
+        except ValueError:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText(
+                "The coordinates don't match with requirements of the dataset in order to perform a successful interpolation.")
+            msg.setWindowTitle("Warning")
+            msg.setWindowIcon(QIcon("Images/warning.png"))
+            msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+            # To display the message box
+            print('Invalid Coordinates')
+            msg.exec()
             pass
 
     def create_date_list(self, start_date_str, end_date_str):

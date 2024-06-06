@@ -4,6 +4,7 @@ import pytz
 from datetime import datetime, timedelta
 import re
 
+import dashboard
 
 utc_time_zone = ''
 coordinates_input = []
@@ -66,7 +67,7 @@ def convert_to_utc_with_offset(input_date_str, offset_str):
         offset = timedelta(hours=int(hours) * sign_multiplier, minutes=int(minutes) * sign_multiplier)
     else:
         raise ValueError("Invalid offset string format")
-
+    dashboard.time_zone = offset
     # Apply the offset to the input date and time
     input_datetime = input_datetime - offset
 
