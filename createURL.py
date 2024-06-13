@@ -61,7 +61,7 @@ def create_url(test_date_str):
     
     url_date_part = f"{calculation_date.year}{calculation_date.month:02d}{calculation_date.day:02d}"
 
-    final_url = f"https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/gfs.{url_date_part}/{tXXz}/atmos/gfs.t{tXXz}z.pgrb2.0p25.f{fYYY:03d}"
+    final_url = f"{main_base}/pub/data/nccf/com/gfs/prod/gfs.{url_date_part}/{tXXz}/atmos/gfs.t{tXXz}z.pgrb2.0p25.f{fYYY:03d}"
 
     return final_url
 

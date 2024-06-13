@@ -1,10 +1,11 @@
 from timezonefinder import TimezoneFinder
 from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderUnavailable
 import pytz
 from datetime import datetime, timedelta
 import re
-
 import dashboard
+import time
 
 utc_time_zone = ''
 coordinates_input = []
@@ -16,7 +17,21 @@ def get_utc_time_from_coordinates(coordinates):
 
         # Reverse geocode to get precise location information
         geolocator = Nominatim(user_agent="get_utc_time_from_coordinates")
-        location = geolocator.reverse((latitude, longitude), language='en')
+        location = None
+        retries = 5
+        delay = 1  # initial delay of 1 second
+
+        for attempt in range(retries):
+            try:
+                location = geolocator.reverse((latitude, longitude), language='en', timeout=1)
+                if location:
+                    break
+            except (GeocoderUnavailable, TimeoutError):
+                if attempt < retries - 1:
+                    time.sleep(delay)
+                    delay *= 0.1  # exponential backoff
+                else:
+                    return "Unable to determine location for the given coordinates after multiple attempts."
 
         if location is None:
             return "Unable to determine location for the given coordinates."
@@ -51,7 +66,6 @@ def get_utc_time_from_coordinates(coordinates):
     except TimeoutError:
         pass
 
-
 def convert_to_utc_with_offset(input_date_str, offset_str):
     # Define input date format
     input_date_format = "%d/%m/%y %H:%M:%S"
@@ -64,7 +78,7 @@ def convert_to_utc_with_offset(input_date_str, offset_str):
     if offset_match:
         sign, hours, minutes = offset_match.groups()
         sign_multiplier = -1 if sign == "-" else 1
-        offset = timedelta(hours=int(hours) * sign_multiplier, minutes=int(minutes) * sign_multiplier)
+        offset = timedelta(hours=int(hours) * sign_multiplier, minutes=int(minutes or 0) * sign_multiplier)
     else:
         raise ValueError("Invalid offset string format")
     dashboard.time_zone = offset

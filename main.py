@@ -375,11 +375,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.source_name.setEnabled(True)
             source_flag = 1
             self.source_button.setText('Set')
+            self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setDisabled(True)
         else:
             self.source_name.setDisabled(True)
             createURL.main_base = self.source_name.text()
             source_flag = 0
             self.source_button.setText('Source')
+            self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(True)
 
 
     def closeEvent(self, event):

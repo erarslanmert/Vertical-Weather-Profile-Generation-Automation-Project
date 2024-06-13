@@ -12,10 +12,10 @@ selected_format = 0
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(251, 153)
+        Dialog.resize(251, 193)
         Dialog.setWindowIcon(QtGui.QIcon("Images/M.png"))
         self.buttonBox = QtWidgets.QDialogButtonBox(parent=Dialog)
-        self.buttonBox.setGeometry(QtCore.QRect(20, 100, 211, 32))
+        self.buttonBox.setGeometry(QtCore.QRect(20, 140, 211, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.StandardButton.Cancel|QtWidgets.QDialogButtonBox.StandardButton.Ok)
         self.buttonBox.setCenterButtons(True)
@@ -32,6 +32,10 @@ class Ui_Dialog(object):
         self.radioButton_3.setDisabled(True)
         self.radioButton_3.hide()
         self.radioButton_3.setChecked(True)
+        self.radioButton_4 = QtWidgets.QRadioButton(parent=Dialog)
+        self.radioButton_4.setGeometry(QtCore.QRect(50, 100, 151, 20))
+        self.radioButton_4.setObjectName("radioButton_4")
+
 
         self.retranslateUi(Dialog)
         self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
@@ -58,6 +62,8 @@ class Ui_Dialog(object):
             selected_format = 1
         elif self.radioButton_2.isChecked() == True:
             selected_format = 2
+        elif self.radioButton_4.isChecked() == True:
+            selected_format = 3
         elif self.radioButton_3.isChecked() == True:
             selected_format = 0
 
@@ -66,7 +72,7 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "Select MET Format"))
         self.radioButton.setText(_translate("Dialog", "Create METCM Message"))
         self.radioButton_2.setText(_translate("Dialog", "Create METTA Message"))
-
+        self.radioButton_4.setText(_translate("Dialog", "All Types - All Files"))
 
 class MyDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):

@@ -5,7 +5,6 @@ import metpy.calc as mpcalc
 from metpy.units import units
 import pandas as pd
 import pytz
-
 import create_METTA
 import dashboard, create_METCM
 
@@ -18,6 +17,9 @@ input_lon = 0
 input_date = ''
 input_wrf_time = ''
 thread_flag = 0
+header_set = []
+table_set = []
+
 
 class VirtualSoundingGenMultiGFS:
 
@@ -91,6 +93,7 @@ class VirtualSoundingGenMultiGFS:
         thread_flag = 1
 
     def genProfile(self, wrf_time, wsLat, wsLon, ds):
+        global header_set, table_set
         if len(self.baseInputDir) > 1:
             dprofile = ds.interp(valid_time=wrf_time, latitude=wsLat, longitude=wsLon)
         else:
@@ -170,26 +173,29 @@ class VirtualSoundingGenMultiGFS:
 
         aux_date_str = pd.to_datetime(wrf_time.values, utc=True).astimezone(pytz.utc).strftime('%Y%m%d_%H%M%SZ')
 
-        create_METCM.header_data = header_data
-        create_METCM.table_data = table_data
-
-        create_METTA.header_data = header_data
-        create_METTA.table_data = table_data
 
         print(f'HEADER DATA\n{header_data}')
         print(f'TABLE DATA\n{table_data}')
+
+        header_set.append(dfh)
+        table_set.append(dft)
+
+
 
         dashboard.df = dft
         print(dfh)
         print(dft)
         dashboard.file_list = input_dir
         dashboard.input_time.append(header_data['ReleaseTime'][0])
-        dashboard.input_header = header_data
-        dashboard.input_table = table_data
-
+        dashboard.input_header.append(header_data)
+        dashboard.input_table.append(table_data)
+        dashboard.headers = header_set
+        dashboard.tables = table_set
 def start_reading_gfs():
     try:
         vs_gen = VirtualSoundingGenMultiGFS()
         vs_gen.init('file_key')
     except Exception as e:
         print("An error occurred:", e)
+
+

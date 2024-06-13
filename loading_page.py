@@ -44,7 +44,7 @@ class Ui_Dialog(object):
         self.textEdit.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.textEdit.setObjectName("textEdit")
         self.textEdit.setReadOnly(True)
-        self.pushButton = QtWidgets.QPushButton(Dialog, clicked = lambda: Dialog.close())
+        self.pushButton = QtWidgets.QPushButton(Dialog, clicked = lambda: self.opener())
         self.pushButton.setGeometry(QtCore.QRect(674, 533, 91, 31))
         self.pushButton.setObjectName("pushButton")
         self.pushButton.setDisabled(True)
@@ -64,7 +64,6 @@ class Ui_Dialog(object):
         self.t3 = threading.Thread(target=profilegenerator.start_reading_gfs)
         self.t3.start()
 
-
     def append_text(self, text):
         self.textEdit.append(text.strip())
         if "<II> Done" in text:
@@ -76,6 +75,8 @@ class Ui_Dialog(object):
             self.label_2.setText('Ready!')
             dashboard.open_dialog()
 
+    def opener(self):
+        dashboard.open_dialog()
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate

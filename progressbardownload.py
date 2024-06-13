@@ -58,6 +58,25 @@ class DownloadThread(QThread):
             error_box.setText("An error occurred:")
             error_box.setInformativeText('Internet connection is lost. Please check your connection and try again. In order to avoid incomplete or broken files, please check out the partially donwloaded files in the selected directory.')
             error_box.exec()
+            pass
+        except requests.exceptions.ConnectionError:
+            error_box = QMessageBox()
+            error_box.setIcon(QMessageBox.Icon.Critical)
+            error_box.setWindowIcon(QIcon("Images/warning.png"))
+            error_box.setWindowTitle("Error")
+            error_box.setText("An error occurred:")
+            error_box.setInformativeText('Connection error occured, please check your internet connection and the base URL of the source.')
+            error_box.exec()
+            pass
+        except requests.exceptions.RequestException:
+            error_box = QMessageBox()
+            error_box.setIcon(QMessageBox.Icon.Critical)
+            error_box.setWindowIcon(QIcon("Images/warning.png"))
+            error_box.setWindowTitle("Error")
+            error_box.setText("An error occurred:")
+            error_box.setInformativeText('Request error occured, please check your internet connection and the base URL of the source.')
+            error_box.exec()
+            pass
 
         t_end = time()
         elapsed_time = t_end - t_start
