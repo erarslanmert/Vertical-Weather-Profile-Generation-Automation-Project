@@ -66,12 +66,27 @@ def get_utc_time_from_coordinates(coordinates):
     except TimeoutError:
         pass
 
+
 def convert_to_utc_with_offset(input_date_str, offset_str):
     # Define input date format
     input_date_format = "%d/%m/%y %H:%M:%S"
 
     # Parse input date string
-    input_datetime = datetime.strptime(input_date_str, input_date_format)
+    try:
+        input_datetime = datetime.strptime(input_date_str, input_date_format)
+    except ValueError as e:
+        print(f"Error parsing input date: {e}")
+        raise
+
+    # Debug: Print the offset string to see its format
+    print(f"Offset string received: '{offset_str}'")
+
+    # Extract the part of the string that matches the expected format
+    match = re.search(r"UTC\s*([+-]\s*\d{1,2}:?\d{0,2})", offset_str)
+    if match:
+        offset_str = match.group(0)
+    else:
+        raise ValueError("Invalid offset string format")
 
     # Parse the offset string
     offset_match = re.match(r"UTC\s*([+-])\s*(\d{1,2}):?(\d{0,2})", offset_str)
@@ -81,7 +96,12 @@ def convert_to_utc_with_offset(input_date_str, offset_str):
         offset = timedelta(hours=int(hours) * sign_multiplier, minutes=int(minutes or 0) * sign_multiplier)
     else:
         raise ValueError("Invalid offset string format")
+
+    # Debug: Print the parsed offset values
+    print(f"Parsed offset - Sign: {sign}, Hours: {hours}, Minutes: {minutes}")
+
     dashboard.time_zone = offset
+
     # Apply the offset to the input date and time
     input_datetime = input_datetime - offset
 
@@ -90,6 +110,5 @@ def convert_to_utc_with_offset(input_date_str, offset_str):
     output_date_str = input_datetime.strftime(output_date_format)
 
     return output_date_str
-
 
 

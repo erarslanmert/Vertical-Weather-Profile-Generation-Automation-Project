@@ -281,6 +281,22 @@ class Ui_Dialog(object):
 
 
     def generate_MET(self):
+        create_METTA.file_list = file_list
+        create_METCM.file_list = file_list
+        create_METTA.forecast_dates = []
+        create_METCM.forecast_dates = []
+        create_METTA.forecast_times = []
+        create_METCM.forecast_times = []
+        for header in input_header:
+            create_METTA.forecast_dates.append(header['ReleaseDate'])
+            create_METCM.forecast_dates.append(header['ReleaseDate'])
+            create_METTA.forecast_times.append(header['ReleaseTime'])
+            create_METCM.forecast_times.append(header['ReleaseTime'])
+        print(create_METTA.forecast_dates)
+        print(create_METTA.forecast_times)
+        print(create_METTA.file_list)
+        create_METTA.index = self.combobox.currentIndex()
+        create_METCM.index = self.combobox.currentIndex()
         metmessage.open_met_dialog()
         if metmessage.selected_format == 1:
             print('METCM Selected')
@@ -298,7 +314,6 @@ class Ui_Dialog(object):
                 create_METCM.create_message(input_header[i], input_table[i], output_files[2*i+1])
         else:
             print('No selection is done')
-
 
     def prev_page(self):
         current_index = self.stacked_widget.currentIndex()

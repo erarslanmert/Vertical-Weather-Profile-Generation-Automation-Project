@@ -1,3 +1,6 @@
+import re
+from datetime import timedelta, datetime
+
 import pandas as pd
 from numpy import array
 from scipy.interpolate import interp1d
@@ -6,6 +9,10 @@ header_data = {}
 table_data = {}
 output_path = ""
 acceptance_flag = 0
+file_list = []
+forecast_dates = []
+forecast_times = []
+index = 0
 
 def interpolate_values(input_dict, target_heights):
     # Extract the original heights and Pc values from the input dictionary
@@ -48,6 +55,34 @@ def determine_Q(latitude, longitude):
             Q = 7  # Southern Hemisphere, 180° to 90° E
     return Q
 
+def calculate_forecast_date(date_list, time_list):
+    result = []
+    for i in range(len(date_list)):
+        date_str = date_list[i][0]
+        time_str = time_list[i][0]
+        file_path = file_list[i]
+
+        # Combine date and time strings into a datetime object
+        date_time_str = f"{date_str} {time_str}"
+        date_time_obj = datetime.strptime(date_time_str, "%d/%m/%y %H:%M:%S")
+
+        # Extract forecast hour and time from the file name
+        match = re.search(r'\.t(\d{2})z\.pgrb2\.0p25\.f(\d{3})', file_path)
+        if match:
+            forecast_time = int(match.group(1))
+            forecast_hour = int(match.group(2))
+        else:
+            raise ValueError(f"Invalid file name format: {file_path}")
+
+        # Create the forecast date and time
+        forecast_done_time = date_time_obj - timedelta(hours=forecast_hour)
+
+        forecast_done_time_str = forecast_done_time.strftime("%d/%m/%y %H:%M:%S")
+
+        result.append(forecast_done_time_str)
+
+    return result
+
 def format_float_to_3_digits(float_input):
     # Extract the integer part and the decimal part
     if float_input < 0:
@@ -60,6 +95,9 @@ def define_message():
     from datetime import datetime
     print(header_data)
     print(table_data)
+    result_dates = calculate_forecast_date(forecast_dates, forecast_times)
+    forecast = result_dates[index]
+    print(result_dates)
     RPLat = header_data['RPLat'][0]
     RPLon = header_data['RPLon'][0]
     date = header_data['ReleaseDate'][0]
@@ -150,7 +188,16 @@ def define_message():
         group_4 = f"{int(altitude[0]):03d}" + formatted_string[-3:]
     else:
         group_4 = f"{int(altitude[0]):03d}" + f"{int(interpolated_dictionary[-1][0]):03d}"
-    message_header = str(group_1) + ' ' + str(group_2) + ' ' + str(group_3) + ' ' + str(group_4)
+
+
+    date_stamp = date.split('/')
+    temp_forcast = forecast.split(' ')
+    temp_dateforecast = temp_forcast[0].split('/')
+    temp_timeforecast = temp_forcast[-1].split(':')
+    message_header = (str(group_1) + ' ' + str(group_2) + ' ' + str(group_3) + ' ' + str(group_4) + ' ' +
+                      date_stamp[1] + date_stamp[2] + ' ' + temp_timeforecast[0] + temp_dateforecast[0] +
+                      temp_dateforecast[1] + temp_dateforecast[-1])
+
     message_body_lines = []
 
     for i in range(len(group_5)):
@@ -174,6 +221,8 @@ def create_message(input_header, input_table, output_directory):
     else:
         acceptance_flag == 0
         pass
+
+
 
 
 

@@ -1,12 +1,21 @@
+import ast
 from datetime import datetime, timedelta, timezone
 
+import create_METTA
 
 final_url = ''
 tXXz = 0
 fYYY = 0
 url_date = ''
-main_base = 'https://nomads.ncep.noaa.gov'
 
+with open('general_settings.txt', 'r') as file:
+    content = file.read()
+    # Remove the "settings = " part to properly evaluate the dictionary
+    content = content.split('=', 1)[1].strip()
+    settings = ast.literal_eval(content)
+
+
+main_base = settings.get('Source_URL')
 
 def create_url(test_date_str):
     global final_url, tXXz, fYYY, url_date, main_base
@@ -18,7 +27,7 @@ def create_url(test_date_str):
     
     time_suffix = ''
 
-
+    print(f'Download Date: {download_date}')
     integer_utc = int(download_date.hour)
 
     # Calculate the time difference

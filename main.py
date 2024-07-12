@@ -1,3 +1,4 @@
+import ast
 import os
 import re
 import socket
@@ -29,7 +30,7 @@ def resource_path(relative_path):
 
 
 
-
+conn = True
 selected_time_zone = ''
 selected_time_interval = []
 selected_location = []
@@ -45,6 +46,7 @@ input_validator_5 = False
 latlon = ()
 thread_flag_1 = 0
 source_flag = 0
+file_dialog_flag = 0
 
 
 class WorkerThread(QThread):
@@ -89,7 +91,7 @@ class FileManagerDialog(QDialog):
         self.open_file_dialog()
 
     def open_file_dialog(self):
-        global browsed_files, selected_location, selected_time_interval
+        global browsed_files, selected_location, selected_time_interval, file_dialog_flag
         try:
             dialog = QFileDialog(self)
             dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)  # Allow selecting multiple files
@@ -105,10 +107,12 @@ class FileManagerDialog(QDialog):
                     print("Selected Files:")
                     for file_path in selected_files:
                         print(file_path)
+                file_dialog_flag = 1
             else:
                 browsed_files = []
                 selected_location = []
                 selected_time_interval = []
+                file_dialog_flag = 0
                 pass
 
         except OSError:
@@ -119,7 +123,7 @@ class Ui_MainWindow(object):
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(366, 430)
+        MainWindow.resize(366, 440)
         MainWindow.setWindowIcon(QtGui.QIcon("Images/M.png"))
         MainWindow.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, False)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
@@ -127,12 +131,15 @@ class Ui_MainWindow(object):
 
         self.source_button = QtWidgets.QPushButton("Source", parent=MainWindow)
         self.source_button.setGeometry(QtCore.QRect(60,380,60,20))
+        self.default_button = QtWidgets.QPushButton("Reset", parent=MainWindow)
+        self.default_button.setGeometry(QtCore.QRect(60, 402, 60, 20))
+        self.default_button.hide()
 
         self.source_name = QtWidgets.QLineEdit(parent=self.centralwidget)
         self.source_name.setGeometry(QtCore.QRect(121, 380, 202, 20))
         self.source_name.setObjectName("source_name")
         self.source_name.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.source_name.setText('https://nomads.ncep.noaa.gov')
+        self.source_name.setText(createURL.main_base)
         self.source_name.setDisabled(True)
 
         self.label_2 = QtWidgets.QLabel(parent=self.centralwidget)
@@ -297,19 +304,13 @@ class Ui_MainWindow(object):
 
         self.comboBox.addItems(['                      Lat-Long', '              MGRS Coordinates', '                UTM Coordinates'])
 
-
-
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
-
-
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
-
-
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -361,7 +362,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.t2 = threading.Thread(target=self.check_inputs)
         self.t2.start()
 
-        self.source_button.clicked.connect(self.soruce_change)
+        self.source_button.clicked.connect(self.source_change)
+        self.default_button.clicked.connect(self.reset_url)
 
         def close_window():
             MainWindow.close()
@@ -369,20 +371,35 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.buttonBox.rejected.connect(close_window)
 
-    def soruce_change(self):
+    def reset_url(self):
+        self.source_name.clear()
+        self.source_name.setText('https://nomads.ncep.noaa.gov')
+    def source_change(self):
         global source_flag
         if source_flag == 0:
             self.source_name.setEnabled(True)
             source_flag = 1
             self.source_button.setText('Set')
             self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setDisabled(True)
+            self.default_button.show()
         else:
             self.source_name.setDisabled(True)
             createURL.main_base = self.source_name.text()
             source_flag = 0
             self.source_button.setText('Source')
             self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(True)
+            self.default_button.hide()
+            with open('general_settings.txt', 'r') as file:
+                content = file.read()
+                # Remove the "settings = " part to properly evaluate the dictionary
+                content = content.split('=', 1)[1].strip()
+                settings = ast.literal_eval(content)
 
+            settings['Source_URL'] = self.source_name.text()
+
+            with open('general_settings.txt', 'w') as file:
+                # Add back the "settings = " part when writing the dictionary to file
+                file.write('settings = ' + str(settings))
 
     def closeEvent(self, event):
         global thread_flag_1
@@ -405,8 +422,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 break
             else:
                 if input_validator_1 == 1 and input_validator_2 == 1:
-                    self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(True)
+                    if conn == True:
+                        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(True)
+                    else:
+                        pass
                     self.browse_button.setEnabled(True)
+
                 else:
                     self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setDisabled(True)
                     self.browse_button.setDisabled(True)
@@ -590,6 +611,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             pass
 
     def is_internet_available(self):
+        global conn
         while True:
             if thread_flag_1 == 1:
                 break
@@ -600,10 +622,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     socket.create_connection(("www.google.com", 80))
                     self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(True)
                     print('<Online>')
+                    conn = True
+
+                except socket.error:
+                    self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setDisabled(True)
+                    print('<Offline>')
+                    conn = False
+                    pass
 
                 except OSError:
                     self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setDisabled(True)
                     print('<Offline>')
+                    conn = False
+                    pass
                 time.sleep(10)
 
     def update_thread_texts(self):
@@ -658,34 +689,37 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         global browsed_files
         try:
             FileManagerDialog()
-            print(browsed_files)
-            download_time_interval = []
-            selected_location = []
-            selected_time_interval = []
-            selected_location.append(float(self.lineEdit.text()))
-            selected_location.append(float(self.lineEdit_2.text()))
-            start_datetime = self.dateTimeEdit.dateTime()
-            end_datetime = self.dateTimeEdit_2.dateTime()
-            string_start_date = start_datetime.toString("dd/MM/yy hh:mm:ss")
-            string_end_date = end_datetime.toString("dd/MM/yy hh:mm:ss")
-            selected_time_interval.append(string_start_date)
-            selected_time_interval.append(string_end_date)
-            time_zone_finder.get_utc_time_from_coordinates(selected_location)
-            selected_time_zone = time_zone_finder.utc_time_zone
-            offset_part = selected_time_zone.split(' ')
-            offset_involved = ' '.join(offset_part[1:])
-            utc_start_time = time_zone_finder.convert_to_utc_with_offset(selected_time_interval[0], offset_involved)
-            utc_end_time = time_zone_finder.convert_to_utc_with_offset(selected_time_interval[-1], offset_involved)
-            download_time_interval.append(utc_start_time)
-            download_time_interval.append(utc_end_time)
-            current_directory = os.path.dirname(os.path.realpath(__file__))
-            profilegenerator.input_dir = sorted(browsed_files)
-            profilegenerator.output_dir = current_directory
-            profilegenerator.input_lat = float(selected_location[0])
-            profilegenerator.input_lon = float(selected_location[-1])
-            profilegenerator.input_date = string_start_date
-            profilegenerator.input_wrf_time = str(start_datetime.time())
-            loading_page.open_loading()
+            if file_dialog_flag == 1:
+                print(browsed_files)
+                download_time_interval = []
+                selected_location = []
+                selected_time_interval = []
+                selected_location.append(float(self.lineEdit.text()))
+                selected_location.append(float(self.lineEdit_2.text()))
+                start_datetime = self.dateTimeEdit.dateTime()
+                end_datetime = self.dateTimeEdit_2.dateTime()
+                string_start_date = start_datetime.toString("dd/MM/yy hh:mm:ss")
+                string_end_date = end_datetime.toString("dd/MM/yy hh:mm:ss")
+                selected_time_interval.append(string_start_date)
+                selected_time_interval.append(string_end_date)
+                time_zone_finder.get_utc_time_from_coordinates(selected_location)
+                selected_time_zone = time_zone_finder.utc_time_zone
+                offset_part = selected_time_zone.split(' ')
+                offset_involved = ' '.join(offset_part[1:])
+                utc_start_time = time_zone_finder.convert_to_utc_with_offset(selected_time_interval[0], offset_involved)
+                utc_end_time = time_zone_finder.convert_to_utc_with_offset(selected_time_interval[-1], offset_involved)
+                download_time_interval.append(utc_start_time)
+                download_time_interval.append(utc_end_time)
+                current_directory = os.path.dirname(os.path.realpath(__file__))
+                profilegenerator.input_dir = sorted(browsed_files)
+                profilegenerator.output_dir = current_directory
+                profilegenerator.input_lat = float(selected_location[0])
+                profilegenerator.input_lon = float(selected_location[-1])
+                profilegenerator.input_date = string_start_date
+                profilegenerator.input_wrf_time = str(start_datetime.time())
+                loading_page.open_loading()
+            else:
+                pass
 
 
         except OSError:

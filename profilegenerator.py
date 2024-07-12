@@ -37,7 +37,11 @@ class VirtualSoundingGenMultiGFS:
 
 
     def getDSInfo(self):
-
+        dashboard.input_time = []
+        dashboard.input_header = []
+        dashboard.input_table = []
+        dashboard.headers = []
+        dashboard.tables = []
         gfs_file_dict = {'basefiledir_s': input_dir,
                          'baseOutput_s': output_dir,
                          'wrfDate': input_date,
@@ -60,6 +64,7 @@ class VirtualSoundingGenMultiGFS:
         self.baseInputDir = input_dir
         self.baseOutputDir = output_dir
 
+
         self.wrfDate = dsInfo['wrfDate']
         self.wrfTime = dsInfo['wrfTime']
         self.wrfTz = dsInfo['wrfTz']
@@ -74,6 +79,8 @@ class VirtualSoundingGenMultiGFS:
         print("<II> Opening dataset")
         dsm = xr.open_mfdataset(paths=files, engine='cfgrib', combine='nested', concat_dim='valid_time', parallel=False, chunks= {'time': 1},
                                 backend_kwargs={'filter_by_keys': {'typeOfLevel': 'isobaricInhPa'}, 'errors': 'ignore'})
+
+        dsm = self.adjust_longitudes(dsm)
 
         print(dsm)
 
@@ -91,6 +98,11 @@ class VirtualSoundingGenMultiGFS:
 
         print("<II> Done")
         thread_flag = 1
+
+    def adjust_longitudes(self, ds):
+        """ Adjust the longitude coordinates from 0-360 to -180 to 180 """
+        ds = ds.assign_coords(longitude=(ds.longitude - 180))
+        return ds
 
     def genProfile(self, wrf_time, wsLat, wsLon, ds):
         global header_set, table_set
@@ -173,14 +185,11 @@ class VirtualSoundingGenMultiGFS:
 
         aux_date_str = pd.to_datetime(wrf_time.values, utc=True).astimezone(pytz.utc).strftime('%Y%m%d_%H%M%SZ')
 
-
         print(f'HEADER DATA\n{header_data}')
         print(f'TABLE DATA\n{table_data}')
 
         header_set.append(dfh)
         table_set.append(dft)
-
-
 
         dashboard.df = dft
         print(dfh)
