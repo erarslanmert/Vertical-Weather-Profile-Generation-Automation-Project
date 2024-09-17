@@ -12,10 +12,10 @@ selected_format = 0
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(251, 193)
+        Dialog.resize(251, 233)
         Dialog.setWindowIcon(QtGui.QIcon("Images/M.png"))
         self.buttonBox = QtWidgets.QDialogButtonBox(parent=Dialog)
-        self.buttonBox.setGeometry(QtCore.QRect(20, 140, 211, 32))
+        self.buttonBox.setGeometry(QtCore.QRect(20, 180, 211, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.StandardButton.Cancel|QtWidgets.QDialogButtonBox.StandardButton.Ok)
         self.buttonBox.setCenterButtons(True)
@@ -33,8 +33,11 @@ class Ui_Dialog(object):
         self.radioButton_3.hide()
         self.radioButton_3.setChecked(True)
         self.radioButton_4 = QtWidgets.QRadioButton(parent=Dialog)
-        self.radioButton_4.setGeometry(QtCore.QRect(50, 100, 151, 20))
+        self.radioButton_4.setGeometry(QtCore.QRect(50, 140, 151, 20))
         self.radioButton_4.setObjectName("radioButton_4")
+        self.radioButton_5 = QtWidgets.QRadioButton(parent=Dialog)
+        self.radioButton_5.setGeometry(QtCore.QRect(50, 100, 151, 20))
+        self.radioButton_5.setObjectName("radioButton_5")
 
 
         self.retranslateUi(Dialog)
@@ -64,6 +67,8 @@ class Ui_Dialog(object):
             selected_format = 2
         elif self.radioButton_4.isChecked() == True:
             selected_format = 3
+        elif self.radioButton_5.isChecked() == True:
+            selected_format = 4
         elif self.radioButton_3.isChecked() == True:
             selected_format = 0
 
@@ -73,6 +78,7 @@ class Ui_Dialog(object):
         self.radioButton.setText(_translate("Dialog", "Create METCM Message"))
         self.radioButton_2.setText(_translate("Dialog", "Create METTA Message"))
         self.radioButton_4.setText(_translate("Dialog", "All Types - All Files"))
+        self.radioButton_5.setText(_translate("Dialog", "Create METAV Message"))
 
 class MyDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
